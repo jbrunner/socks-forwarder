@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  socks-forwarder:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: socks5-forwarder
+    restart: unless-stopped
+    
+    # Network configuration
+    ports:
+      - "1080:1080"      # SOCKS5 proxy port
+      - "8080:8080"      # Metrics port
+
+    # Security settings for rootless container
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.5'
+        reservations:
+          memory: 32M
+          cpus: '0.1'
+    
+    # Environment variables
+    environment:
+      - TZ=UTC
+    
+    # Mount custom configuration
+    volumes:
+      - ./config.yaml:/etc/socks-forwarder/config.yaml:ro
+    
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    # Health check
+    healthcheck:
+      test: ["/usr/local/bin/socks-forwarder", "-help"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+# Optional: Create a dedicated network
+networks:
+  default:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

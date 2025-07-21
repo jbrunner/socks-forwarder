@@ -1,0 +1,38 @@
+# Test configuration for SOCKS5 Forwarder
+port: 1080
+debug: true
+metricsEnabled: true
+metricsPort: 8080
+
+# Direct hosts - these bypass all forwarding rules
+directHosts:
+  - "localhost"
+  - "127.0.0.1"
+  - "*.local"
+  - "direct.example.com"
+
+# Example rules for testing
+rules:
+  # Forward multiple domains through one proxy
+  - target: "proxy.example.com:1080"
+    hostnames:
+      - "example.com"
+      - "api.example.com"
+    description: "Example.com services through proxy"
+  
+  # Forward test domains through another proxy
+  - target: "test-proxy.example.com:1080"
+    hostnames:
+      - "*.test.com"
+      - "staging.test.org"
+    description: "Test domain requests"
+  
+  # This rule would match direct.example.com, but it's overridden by directHosts
+  - target: "example-proxy.com:1080"
+    hostnames:
+      - "*.example.com"
+      - "*.example.org"
+    description: "Example domains"
+
+# Uncomment to set a default proxy for all unmatched requests
+# defaultTarget: "default-proxy.example.com:1080"

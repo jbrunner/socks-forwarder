@@ -1,0 +1,40 @@
+# Git files
+.git
+.gitignore
+
+# Documentation
+README.md
+*.md
+
+# Build artifacts
+socks-forwarder
+socks-forwarder-*
+*.exe
+
+# Test files
+*_test.go
+
+# Development configs
+config-test.yaml
+demo-config.yaml
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker files (except the one we're using)
+Dockerfile.*
+docker-compose*.yml
+
+# Logs
+*.log
+
+# Temporary files
+tmp/
+temp/

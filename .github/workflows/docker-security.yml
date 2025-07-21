@@ -1,0 +1,119 @@
+name: Docker Security Scan
+
+on:
+  push:
+    branches: [ main ]
+    paths: 
+      - 'Dockerfile'
+      - 'docker-compose.yml'
+      - '.github/workflows/docker-security.yml'
+  pull_request:
+    branches: [ main ]
+    paths: 
+      - 'Dockerfile'
+      - 'docker-compose.yml'
+  schedule:
+    - cron: '0 4 * * 1'  # Weekly on Monday at 4 AM
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  docker-security:
+    name: Docker Image Security Scan
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      security-events: write
+
+    strategy:
+      matrix:
+        dockerfile: [Dockerfile]
+        
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Docker image for scanning
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        file: ./${{ matrix.dockerfile }}
+        load: true
+        tags: test-image:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'test-image:latest'
+        format: 'sarif'
+        output: 'trivy-${{ matrix.dockerfile }}.sarif'
+
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: 'trivy-${{ matrix.dockerfile }}.sarif'
+        category: 'trivy-${{ matrix.dockerfile }}'
+
+    - name: Run Grype vulnerability scanner
+      uses: anchore/scan-action@v3
+      id: grype-scan
+      with:
+        image: 'test-image:latest'
+        fail-build: false
+        severity-cutoff: high
+
+    - name: Upload Grype scan results
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: ${{ steps.grype-scan.outputs.sarif }}
+        category: 'grype-${{ matrix.dockerfile }}'
+
+    - name: Generate security report
+      run: |
+        echo "# Security Scan Report for ${{ matrix.dockerfile }}" > security-report-${{ matrix.dockerfile }}.md
+        echo "" >> security-report-${{ matrix.dockerfile }}.md
+        echo "## Image Details" >> security-report-${{ matrix.dockerfile }}.md
+        docker inspect test-image:latest --format='{{json .}}' | jq -r '.Config.Labels // {} | to_entries[] | "- \(.key): \(.value)"' >> security-report-${{ matrix.dockerfile }}.md
+        echo "" >> security-report-${{ matrix.dockerfile }}.md
+        echo "## Image Size" >> security-report-${{ matrix.dockerfile }}.md
+        docker images test-image:latest --format "Size: {{.Size}}" >> security-report-${{ matrix.dockerfile }}.md
+
+    - name: Upload security report
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-report-${{ matrix.dockerfile }}
+        path: security-report-${{ matrix.dockerfile }}.md
+
+  dockerfile-lint:
+    name: Dockerfile Lint
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Lint Dockerfile
+      uses: hadolint/hadolint-action@v3.1.0
+      with:
+        dockerfile: Dockerfile
+        format: sarif
+        output-file: hadolint-dockerfile.sarif
+        no-fail: true
+
+    - name: Upload Hadolint scan results
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: hadolint-dockerfile.sarif
+        category: hadolint-dockerfile
+

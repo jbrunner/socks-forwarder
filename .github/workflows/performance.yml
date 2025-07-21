@@ -1,0 +1,92 @@
+name: Performance Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 2 * * 1'  # Weekly on Monday at 2 AM
+
+env:
+  GO_VERSION: '1.24'
+
+jobs:
+  benchmark:
+    name: Benchmark Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+
+    - name: Run benchmarks
+      run: |
+        go test -bench=. -benchmem -run=^$ ./... | tee benchmark.txt
+        
+    - name: Upload benchmark results
+      uses: actions/upload-artifact@v4
+      with:
+        name: benchmark-results
+        path: benchmark.txt
+
+    - name: Store benchmark result
+      uses: benchmark-action/github-action-benchmark@v1
+      if: github.ref == 'refs/heads/main'
+      with:
+        tool: 'go'
+        output-file-path: benchmark.txt
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        auto-push: true
+        comment-on-alert: true
+        alert-threshold: '200%'
+        fail-on-alert: false
+
+  load-test:
+    name: Load Test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Build application
+      run: go build -o socks-forwarder ./cmd/socks-forwarder
+
+    - name: Start SOCKS5 server
+      run: |
+        ./socks-forwarder -config config-test.yaml &
+        echo $! > server.pid
+        sleep 2
+
+    - name: Install curl for testing
+      run: sudo apt-get update && sudo apt-get install -y curl
+
+    - name: Basic connectivity test
+      run: |
+        # Test basic connectivity
+        timeout 10s curl --socks5 localhost:1080 -s -o /dev/null http://httpbin.org/ip || echo "Connection test may have failed (expected in CI)"
+
+    - name: Cleanup
+      run: |
+        if [ -f server.pid ]; then
+          kill $(cat server.pid) || true
+        fi

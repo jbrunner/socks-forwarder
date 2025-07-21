@@ -1,0 +1,62 @@
+# SOCKS5 Forwarder Configuration
+
+# Port to listen on for incoming SOCKS5 connections
+port: 1080
+
+# Enable debug logging
+debug: false
+
+# Enable metrics server (defaults to true)
+metricsEnabled: true
+
+# Metrics server port (optional, defaults to main port + 1000)
+metricsPort: 8080
+
+# Direct hosts - these will always be served directly, bypassing all rules
+# Supports wildcard patterns like *.example.com
+# PRIORITY: Highest - these override any forwarding rules
+directHosts:
+  - "localhost"
+  - "127.0.0.1"
+  - "*.local"
+  - "*.localhost"
+  - "direct.example.com"
+
+# Default target SOCKS5 server (optional)
+# If specified, all requests that don't match any rule will be forwarded here
+# PRIORITY: Lowest - only used when no rules match and not in directHosts
+# defaultTarget: "127.0.0.1:1081"
+
+# Forwarding rules - requests matching these hostnames will be forwarded
+# to the specified SOCKS5 servers (unless overridden by directHosts)
+# PRIORITY: Medium - checked after directHosts but before defaultTarget
+rules:
+  # Example: Forward company internal services through one proxy
+  - target: "proxy.company.com:1080"
+    hostnames:
+      - "*.internal.company.com"
+      - "intranet.company.com"
+      - "admin.company.com"
+    description: "Company internal services"
+  
+  # Example: Forward development and staging environments
+  - target: "dev-proxy.example.com:1080"
+    hostnames:
+      - "dev.example.com"
+      - "*.dev.example.com"
+      - "*.staging.example.com"
+    description: "Development and staging environments"
+  
+  # Example: Forward specific services through another proxy
+  - target: "service-proxy.example.com:1080"
+    hostnames:
+      - "api.service.com"
+      - "dashboard.service.com"
+      - "*.monitoring.service.com"
+    description: "External service integrations"
+  
+  # Example: Forward specific IP ranges through a different proxy
+  # Note: This would require additional IP matching logic in the code
+  # - hostname: "192.168.1.*"
+  #   target: "internal-proxy.company.com:1080"
+  #   description: "Internal network"
