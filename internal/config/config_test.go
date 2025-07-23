@@ -184,7 +184,7 @@ rules:
   - target: "proxy.test.com:1080"
     hostnames:
       - "*.test.com"
-    description: "Test rule"
+    name: "Test rule"
 `
 
 	tmpFile, err := os.CreateTemp("", "test-config-*.yaml")

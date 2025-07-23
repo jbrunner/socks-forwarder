@@ -75,15 +75,15 @@ rules:
       - "*.internal.company.com"
       - "intranet.company.com"
       - "admin.company.com"
-    description: "Company internal services"
-  
+    name: "Company internal services"
+
   # Forward development environments
   - target: "dev-proxy.example.com:1080"
     hostnames:
       - "dev.example.com"
       - "*.dev.example.com"
       - "*.staging.example.com"
-    description: "Development and staging environments"
+    name: "Development and staging environments"
 ```
 
 ### Configuration Options
@@ -97,7 +97,7 @@ rules:
 - **`rules`**: Array of forwarding rules with the following properties:
   - **`target`**: Target SOCKS5 server address (host:port)
   - **`hostnames`**: Array of hostname patterns to match (supports `*` wildcards)
-  - **`description`**: Optional description of the rule
+  - **`name`**: Optional name of the rule
 
 ### Hostname Matching
 
@@ -159,7 +159,7 @@ curl http://localhost:2080/health
 
 #### Routing Metrics
 - `socks5_routing_decisions_total{decision,target}` - Routing decisions made
-- `socks5_rule_matches_total{rule_target,rule_description}` - Rule matches
+- `socks5_rule_matches_total{rule_target,rule_name}` - Rule matches
 - `socks5_direct_host_matches_total` - Direct host matches
 - `socks5_active_rules_total` - Number of active forwarding rules
 - `socks5_active_direct_hosts_total` - Number of active direct host patterns

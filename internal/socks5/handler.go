@@ -288,9 +288,9 @@ func (h *Handler) handleRoutingRules(targetHost string, targetPort int) (net.Con
 // handleRuleMatch establishes connection through rule-specified proxy.
 func (h *Handler) handleRuleMatch(rule *config.Rule, targetHost string, targetPort int) (net.Conn, string, error) {
 	if h.Debug {
-		log.Printf("Forwarding %s:%d through %s (rule: %s)", targetHost, targetPort, rule.Target, rule.Description)
+		log.Printf("Forwarding %s:%d through %s (rule: %s)", targetHost, targetPort, rule.Target, rule.Name)
 	}
-	metrics.RecordRuleMatch(rule.Target, rule.Description)
+	metrics.RecordRuleMatch(rule.Target, rule.Name)
 	metrics.RecordProxyDecision(rule.Target)
 
 	conn, err := h.connectThroughSocks5(rule.Target, targetHost, targetPort)

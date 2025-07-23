@@ -44,7 +44,7 @@ var (
 	RuleMatches = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "socks5_rule_matches_total",
 		Help: "Total number of rule matches",
-	}, []string{"rule_target", "rule_description"})
+	}, []string{"rule_target", "rule_name"})
 
 	//nolint:gochecknoglobals // gochecknoglobals:global-variable - Prometheus metrics must be global
 	DirectHostMatches = promauto.NewCounter(prometheus.CounterOpts{
@@ -138,8 +138,8 @@ func RecordDefaultDecision(target string) {
 	RoutingDecisions.WithLabelValues("default", target).Inc()
 }
 
-func RecordRuleMatch(ruleTarget, ruleDescription string) {
-	RuleMatches.WithLabelValues(ruleTarget, ruleDescription).Inc()
+func RecordRuleMatch(ruleTarget, ruleName string) {
+	RuleMatches.WithLabelValues(ruleTarget, ruleName).Inc()
 }
 
 func RecordDirectHostMatch() {
