@@ -124,7 +124,7 @@ jobs:
     name: Build and Push Docker Image
     runs-on: ubuntu-latest
     needs: [test, build]
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     permissions:
       contents: read
@@ -205,67 +205,3 @@ jobs:
       if: always()
       with:
         sarif_file: 'gosec-results.sarif'
-
-  release:
-    name: Create Release
-    runs-on: ubuntu-latest
-    needs: [test, build, docker]
-    if: startsWith(github.ref, 'refs/tags/')
-
-    permissions:
-      contents: write
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Download all artifacts
-      uses: actions/download-artifact@v4
-
-    - name: Create release archives
-      run: |
-        mkdir -p releases
-        for dir in binaries-*; do
-          if [ -d "$dir" ]; then
-            os_arch=$(echo "$dir" | sed 's/binaries-//')
-            cd "$dir"
-            if ls *.exe 1> /dev/null 2>&1; then
-              zip "../releases/socks-forwarder-${os_arch}.zip" *
-            else
-              tar -czf "../releases/socks-forwarder-${os_arch}.tar.gz" *
-            fi
-            cd ..
-          fi
-        done
-
-    - name: Generate changelog
-      id: changelog
-      run: |
-        if [ -f CHANGELOG.md ]; then
-          echo "changelog<<EOF" >> $GITHUB_OUTPUT
-          cat CHANGELOG.md >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-        else
-          echo "changelog=See commit history for changes." >> $GITHUB_OUTPUT
-        fi
-
-    - name: Create GitHub Release
-      uses: softprops/action-gh-release@v2
-      with:
-        files: releases/*
-        body: |
-          ## SOCKS5 Forwarder ${{ github.ref_name }}
-
-          ### Docker Images
-          - `ghcr.io/${{ github.repository }}:${{ github.ref_name }}`
-          - `ghcr.io/${{ github.repository }}:latest`
-
-          ### Usage
-          ```bash
-          docker run -p 1080:1080 ghcr.io/${{ github.repository }}:${{ github.ref_name }}
-          ```
-
-          ### Changes
-          ${{ steps.changelog.outputs.changelog }}
-        draft: false
-        prerelease: ${{ contains(github.ref_name, '-') }}
