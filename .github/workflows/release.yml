@@ -94,7 +94,7 @@ jobs:
         fi
 
         # Copy documentation and configs
-        cp README.md LICENSE config.yaml config.docker.yaml "socks-forwarder-${VERSION}-${OS_ARCH}/"
+        cp README.md LICENSE config.yaml "socks-forwarder-${VERSION}-${OS_ARCH}/"
 
         # Create archive
         if [ "${{ matrix.os }}" = "windows" ]; then
