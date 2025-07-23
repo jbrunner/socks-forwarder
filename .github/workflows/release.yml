@@ -7,8 +7,6 @@ on:
 
 env:
   GO_VERSION: '1.24'
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   validate-tag:
@@ -17,7 +15,7 @@ jobs:
     outputs:
       version: ${{ steps.get-version.outputs.version }}
       is-prerelease: ${{ steps.check-prerelease.outputs.is-prerelease }}
-    
+
     steps:
     - name: Get version from tag
       id: get-version
@@ -39,7 +37,7 @@ jobs:
     name: Build Release Binaries
     runs-on: ubuntu-latest
     needs: validate-tag
-    
+
     strategy:
       matrix:
         include:
@@ -53,7 +51,7 @@ jobs:
             arch: amd64
           - os: darwin
             arch: arm64
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -71,11 +69,11 @@ jobs:
       run: |
         VERSION=${{ needs.validate-tag.outputs.version }}
         BINARY_NAME=socks-forwarder-${{ matrix.os }}-${{ matrix.arch }}
-        
+
         if [ "${{ matrix.os }}" = "windows" ]; then
           BINARY_NAME="${BINARY_NAME}.exe"
         fi
-        
+
         go build \
           -ldflags="-w -s -X main.version=${VERSION} -X main.buildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ) -X main.gitCommit=${GITHUB_SHA:0:7}" \
           -o "${BINARY_NAME}" \
@@ -85,19 +83,19 @@ jobs:
       run: |
         VERSION=${{ needs.validate-tag.outputs.version }}
         OS_ARCH=${{ matrix.os }}-${{ matrix.arch }}
-        
+
         mkdir -p "socks-forwarder-${VERSION}-${OS_ARCH}"
-        
+
         # Copy binary
         if [ "${{ matrix.os }}" = "windows" ]; then
           cp "socks-forwarder-${OS_ARCH}.exe" "socks-forwarder-${VERSION}-${OS_ARCH}/"
         else
           cp "socks-forwarder-${OS_ARCH}" "socks-forwarder-${VERSION}-${OS_ARCH}/"
         fi
-        
+
         # Copy documentation and configs
         cp README.md LICENSE config.yaml config.docker.yaml "socks-forwarder-${VERSION}-${OS_ARCH}/"
-        
+
         # Create archive
         if [ "${{ matrix.os }}" = "windows" ]; then
           zip -r "socks-forwarder-${VERSION}-${OS_ARCH}.zip" "socks-forwarder-${VERSION}-${OS_ARCH}/"
@@ -117,7 +115,7 @@ jobs:
     name: Build and Push Release Docker Images
     runs-on: ubuntu-latest
     needs: validate-tag
-    
+
     permissions:
       contents: read
       packages: write
@@ -132,7 +130,7 @@ jobs:
     - name: Log in to Container Registry
       uses: docker/login-action@v3
       with:
-        registry: ${{ env.REGISTRY }}
+        registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
@@ -140,7 +138,7 @@ jobs:
       id: meta
       uses: docker/metadata-action@v5
       with:
-        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        images: ghcr.io/${{ github.repository }}
         tags: |
           type=semver,pattern={{version}}
           type=semver,pattern={{major}}.{{minor}}
@@ -148,18 +146,14 @@ jobs:
           type=raw,value=latest,enable=${{ !needs.validate-tag.outputs.is-prerelease }}
 
     - name: Build and push Docker image
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v6
       with:
         context: .
         file: ./Dockerfile
         platforms: linux/amd64,linux/arm64
         push: true
         tags: ${{ steps.meta.outputs.tags }}
-        labels: |
-          ${{ steps.meta.outputs.labels }}
-          org.opencontainers.image.title=SOCKS5 Forwarder
-          org.opencontainers.image.description=Rootless SOCKS5 proxy forwarder with rule-based routing
-          org.opencontainers.image.version=${{ needs.validate-tag.outputs.version }}
+        labels: ${{ steps.meta.outputs.labels }}
         build-args: |
           VERSION=${{ needs.validate-tag.outputs.version }}
           BUILD_DATE=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
@@ -169,7 +163,7 @@ jobs:
     name: Create GitHub Release
     runs-on: ubuntu-latest
     needs: [validate-tag, build-binaries, build-docker]
-    
+
     permissions:
       contents: write
 
@@ -211,39 +205,39 @@ jobs:
         name: Release ${{ needs.validate-tag.outputs.version }}
         body: |
           ## SOCKS5 Forwarder ${{ needs.validate-tag.outputs.version }}
-          
+
           A Golang SOCKS5 proxy server that forwards connections based on hostname rules.
-          
+
           ### 🐳 Docker Images
-          
+
           **Distroless (Recommended for production):**
           ```bash
           docker pull ghcr.io/${{ github.repository }}:${{ needs.validate-tag.outputs.version }}
           docker run -p 1080:1080 ghcr.io/${{ github.repository }}:${{ needs.validate-tag.outputs.version }}
           ```
-          
+
           **Scratch (Minimal size):**
           ```bash
           docker pull ghcr.io/${{ github.repository }}:${{ needs.validate-tag.outputs.version }}-scratch
           docker run -p 1080:1080 ghcr.io/${{ github.repository }}:${{ needs.validate-tag.outputs.version }}-scratch
           ```
-          
+
           ### 📥 Binary Downloads
-          
+
           Download the appropriate binary for your platform from the assets below.
-          
+
           ### 🚀 Quick Start
-          
+
           1. Download the binary for your platform
           2. Create a `config.yaml` file (see repository for examples)
           3. Run: `./socks-forwarder -config config.yaml`
-          
+
           ### 📋 Changelog
-          
+
           ${{ steps.changelog.outputs.changelog }}
-          
+
           ### 🔍 Verification
-          
+
           All releases are signed and can be verified using the provided checksums.
         draft: false
         prerelease: ${{ needs.validate-tag.outputs.is-prerelease == 'true' }}
