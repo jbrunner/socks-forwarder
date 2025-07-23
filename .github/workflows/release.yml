@@ -61,6 +61,16 @@ jobs:
       with:
         go-version: ${{ env.GO_VERSION }}
 
+    - name: Cache Go modules
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
     - name: Build binary
       env:
         GOOS: ${{ matrix.os }}
@@ -173,10 +183,10 @@ jobs:
       with:
         fetch-depth: 0  # Fetch full history for changelog
 
-    - name: Download all artifacts
+    - name: Download release artifacts
       uses: actions/download-artifact@v4
       with:
-        pattern: release-*
+        pattern: "release-*"
         path: ./artifacts
 
     - name: Prepare release assets
