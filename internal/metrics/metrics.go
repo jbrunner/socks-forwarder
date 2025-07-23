@@ -44,7 +44,7 @@ var (
 	RoutingDecisions = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "socks5_routing_decisions_total",
 		Help: "Total routing decisions made",
-	}, []string{"decision", "target", "rule_name"}) // decision: direct, proxy, default; target: hostname of target
+	}, []string{"decision", "rule_name"}) // decision: direct, proxy, default
 
 	//nolint:gochecknoglobals // gochecknoglobals:global-variable - Prometheus metrics must be global
 	RuleMatches = promauto.NewCounterVec(prometheus.CounterOpts{
@@ -63,13 +63,13 @@ var (
 	ConnectionErrors = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "socks5_connection_errors_total",
 		Help: "Total connection errors",
-	}, []string{"error_type", "target", "rule_name"}) // error_type: dial_failed, proxy_failed, auth_failed, etc.
+	}, []string{"error_type", "rule_name"}) // error_type: dial_failed, proxy_failed, auth_failed, etc.
 
 	//nolint:gochecknoglobals // gochecknoglobals:global-variable - Prometheus metrics must be global
 	ProxyErrors = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "socks5_proxy_errors_total",
 		Help: "Total proxy-related errors",
-	}, []string{"proxy_target", "error_type", "rule_name"})
+	}, []string{"error_type", "rule_name"})
 
 	// Performance metrics.
 	//nolint:gochecknoglobals // gochecknoglobals:global-variable - Prometheus metrics must be global
@@ -127,16 +127,16 @@ func RecordBytesOut(bytes float64, routingType, ruleName string) {
 	BytesTransferred.WithLabelValues("out", routingType, ruleName).Add(bytes)
 }
 
-func RecordDirectDecision(target, ruleName string) {
-	RoutingDecisions.WithLabelValues("direct", target, ruleName).Inc()
+func RecordDirectDecision(ruleName string) {
+	RoutingDecisions.WithLabelValues("direct", ruleName).Inc()
 }
 
-func RecordProxyDecision(target, ruleName string) {
-	RoutingDecisions.WithLabelValues("proxy", target, ruleName).Inc()
+func RecordProxyDecision(ruleName string) {
+	RoutingDecisions.WithLabelValues("proxy", ruleName).Inc()
 }
 
-func RecordDefaultDecision(target, ruleName string) {
-	RoutingDecisions.WithLabelValues("default", target, ruleName).Inc()
+func RecordDefaultDecision(ruleName string) {
+	RoutingDecisions.WithLabelValues("default", ruleName).Inc()
 }
 
 func RecordRuleMatch(ruleTarget, ruleName string) {
@@ -147,12 +147,12 @@ func RecordDirectHostMatch() {
 	DirectHostMatches.Inc()
 }
 
-func RecordConnectionError(errorType, target, ruleName string) {
-	ConnectionErrors.WithLabelValues(errorType, target, ruleName).Inc()
+func RecordConnectionError(errorType, ruleName string) {
+	ConnectionErrors.WithLabelValues(errorType, ruleName).Inc()
 }
 
-func RecordProxyError(proxyTarget, errorType, ruleName string) {
-	ProxyErrors.WithLabelValues(proxyTarget, errorType, ruleName).Inc()
+func RecordProxyError(errorType, ruleName string) {
+	ProxyErrors.WithLabelValues(errorType, ruleName).Inc()
 }
 
 func UpdateActiveRules(count int) {

@@ -93,7 +93,7 @@ func (h *Handler) Handle(clientConn net.Conn) error {
 	// Step 1: Authentication negotiation
 	if err := h.handleAuthentication(clientConn); err != nil {
 		metrics.RecordConnectionFailure()
-		metrics.RecordConnectionError("auth_failed", clientConn.RemoteAddr().String(), "unknown")
+		metrics.RecordConnectionError("auth_failed", "unknown")
 
 		return fmt.Errorf("authentication failed: %w", err)
 	}
@@ -101,7 +101,7 @@ func (h *Handler) Handle(clientConn net.Conn) error {
 	// Step 2: Handle SOCKS5 request
 	if err := h.handleRequest(clientConn); err != nil {
 		metrics.RecordConnectionFailure()
-		metrics.RecordConnectionError("request_failed", clientConn.RemoteAddr().String(), "unknown")
+		metrics.RecordConnectionError("request_failed", "unknown")
 
 		return fmt.Errorf("request handling failed: %w", err)
 	}
@@ -264,7 +264,7 @@ func (h *Handler) handleDirectHost(targetHost string, targetPort int) (net.Conn,
 		log.Printf("Direct connection to %s:%d (configured as direct host)", targetHost, targetPort)
 	}
 	metrics.RecordDirectHostMatch()
-	metrics.RecordDirectDecision(targetHost, "direct_host")
+	metrics.RecordDirectDecision("direct_host")
 
 	conn, err := h.connectDirect(targetHost, targetPort, "direct_host")
 
@@ -291,7 +291,7 @@ func (h *Handler) handleRuleMatch(rule *config.Rule, targetHost string, targetPo
 		log.Printf("Forwarding %s:%d through %s (rule: %s)", targetHost, targetPort, rule.Target, rule.Name)
 	}
 	metrics.RecordRuleMatch(rule.Target, rule.Name)
-	metrics.RecordProxyDecision(rule.Target, rule.Name)
+	metrics.RecordProxyDecision(rule.Name)
 
 	conn, err := h.connectThroughSocks5(rule.Target, targetHost, targetPort, rule.Name)
 
@@ -303,7 +303,7 @@ func (h *Handler) handleDefaultTarget(targetHost string, targetPort int) (net.Co
 	if h.Debug {
 		log.Printf("Forwarding %s:%d through default target %s", targetHost, targetPort, h.Config.DefaultTarget)
 	}
-	metrics.RecordDefaultDecision(h.Config.DefaultTarget, "default_target")
+	metrics.RecordDefaultDecision("default_target")
 
 	conn, err := h.connectThroughSocks5(h.Config.DefaultTarget, targetHost, targetPort, "default_target")
 
@@ -315,7 +315,7 @@ func (h *Handler) handleDirectConnection(targetHost string, targetPort int) (net
 	if h.Debug {
 		log.Printf("Direct connection to %s:%d", targetHost, targetPort)
 	}
-	metrics.RecordDirectDecision(targetHost, "fallback_direct")
+	metrics.RecordDirectDecision("fallback_direct")
 
 	conn, err := h.connectDirect(targetHost, targetPort, "fallback_direct")
 
@@ -340,7 +340,7 @@ func (h *Handler) connectDirect(host string, port int, ruleName string) (net.Con
 	dialer := &net.Dialer{Timeout: DialTimeout}
 	conn, err := dialer.Dial("tcp", address)
 	if err != nil {
-		metrics.RecordConnectionError("dial_failed", address, ruleName)
+		metrics.RecordConnectionError("dial_failed", ruleName)
 
 		return nil, fmt.Errorf("failed to dial %s: %w", address, err)
 	}
@@ -359,7 +359,7 @@ func (h *Handler) connectThroughSocks5(proxyAddr, targetHost string, targetPort 
 	dialer := &net.Dialer{Timeout: DialTimeout}
 	proxyConn, err := dialer.Dial("tcp", proxyAddr)
 	if err != nil {
-		metrics.RecordProxyError(proxyAddr, "connection_failed", ruleName)
+		metrics.RecordProxyError("connection_failed", ruleName)
 
 		return nil, fmt.Errorf("failed to connect to proxy %s: %w", proxyAddr, err)
 	}
@@ -367,7 +367,7 @@ func (h *Handler) connectThroughSocks5(proxyAddr, targetHost string, targetPort 
 	// Perform SOCKS5 handshake
 	if err := h.performSocks5Handshake(proxyConn, targetHost, targetPort); err != nil {
 		proxyConn.Close()
-		metrics.RecordProxyError(proxyAddr, "handshake_failed", ruleName)
+		metrics.RecordProxyError("handshake_failed", ruleName)
 
 		return nil, fmt.Errorf("SOCKS5 handshake failed: %w", err)
 	}

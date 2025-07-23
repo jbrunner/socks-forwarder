@@ -159,15 +159,15 @@ curl http://localhost:2080/health
 - `socks5_data_transfer_rate_bytes_per_second{direction,rule_name}` - Data transfer rate histogram
 
 #### Routing Metrics
-- `socks5_routing_decisions_total{decision,target,rule_name}` - Routing decisions made
+- `socks5_routing_decisions_total{decision,rule_name}` - Routing decisions made
 - `socks5_rule_matches_total{rule_target,rule_name}` - Rule matches
 - `socks5_direct_host_matches_total` - Direct host matches
 - `socks5_active_rules` - Number of active forwarding rules
 - `socks5_active_direct_hosts` - Number of active direct host patterns
 
 #### Error Metrics
-- `socks5_connection_errors_total{error_type,target,rule_name}` - Connection errors
-- `socks5_proxy_errors_total{proxy_target,error_type,rule_name}` - Proxy-related errors
+- `socks5_connection_errors_total{error_type,rule_name}` - Connection errors
+- `socks5_proxy_errors_total{error_type,rule_name}` - Proxy-related errors
 
 #### Performance Metrics
 - `socks5_connection_establishment_seconds{connection_type,rule_name}` - Connection establishment time
