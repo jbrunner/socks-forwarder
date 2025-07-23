@@ -150,26 +150,27 @@ curl http://localhost:2080/health
 
 #### Connection Metrics
 - `socks5_active_connections` - Number of currently active SOCKS5 connections
+- `socks5_active_connections_by_rule{rule_name}` - Number of currently active SOCKS5 connections by rule
 - `socks5_connections_total{status}` - Total number of SOCKS5 connections handled (success/failed)
-- `socks5_connection_duration_seconds{routing_type}` - Connection duration histogram
+- `socks5_connection_duration_seconds{routing_type,rule_name}` - Connection duration histogram
 
 #### Traffic Metrics
-- `socks5_bytes_transferred_total{direction,routing_type}` - Total bytes transferred
-- `socks5_data_transfer_rate_bytes_per_second{direction}` - Data transfer rate histogram
+- `socks5_bytes_transferred_total{direction,routing_type,rule_name}` - Total bytes transferred
+- `socks5_data_transfer_rate_bytes_per_second{direction,rule_name}` - Data transfer rate histogram
 
 #### Routing Metrics
-- `socks5_routing_decisions_total{decision,target}` - Routing decisions made
+- `socks5_routing_decisions_total{decision,target,rule_name}` - Routing decisions made
 - `socks5_rule_matches_total{rule_target,rule_name}` - Rule matches
 - `socks5_direct_host_matches_total` - Direct host matches
 - `socks5_active_rules` - Number of active forwarding rules
 - `socks5_active_direct_hosts` - Number of active direct host patterns
 
 #### Error Metrics
-- `socks5_connection_errors_total{error_type,target}` - Connection errors
-- `socks5_proxy_errors_total{proxy_target,error_type}` - Proxy-related errors
+- `socks5_connection_errors_total{error_type,target,rule_name}` - Connection errors
+- `socks5_proxy_errors_total{proxy_target,error_type,rule_name}` - Proxy-related errors
 
 #### Performance Metrics
-- `socks5_connection_establishment_seconds{connection_type}` - Connection establishment time
+- `socks5_connection_establishment_seconds{connection_type,rule_name}` - Connection establishment time
 
 ### Grafana Dashboard
 
