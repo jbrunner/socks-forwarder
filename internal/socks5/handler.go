@@ -249,7 +249,9 @@ func (h *Handler) parseTargetAddress(
 }
 
 // establishTargetConnection determines routing and establishes connection.
-func (h *Handler) establishTargetConnection(targetHost string, targetPort int) (net.Conn, string, string, error) {
+func (h *Handler) establishTargetConnection(
+	targetHost string, targetPort int,
+) (conn net.Conn, routingType, ruleName string, err error) {
 	// Check if this host should be served directly (bypasses rules)
 	if h.Config.ShouldServeDirect(targetHost) {
 		return h.handleDirectHost(targetHost, targetPort)
@@ -259,20 +261,24 @@ func (h *Handler) establishTargetConnection(targetHost string, targetPort int) (
 }
 
 // handleDirectHost establishes direct connection for configured direct hosts.
-func (h *Handler) handleDirectHost(targetHost string, targetPort int) (net.Conn, string, string, error) {
+func (h *Handler) handleDirectHost(
+	targetHost string, targetPort int,
+) (conn net.Conn, routingType, ruleName string, err error) {
 	if h.Debug {
 		log.Printf("Direct connection to %s:%d (configured as direct host)", targetHost, targetPort)
 	}
 	metrics.RecordDirectHostMatch()
 	metrics.RecordDirectDecision("direct_host")
 
-	conn, err := h.connectDirect(targetHost, targetPort, "direct_host")
+	conn, err = h.connectDirect(targetHost, targetPort, "direct_host")
 
 	return conn, "direct", "direct_host", err
 }
 
 // handleRoutingRules processes forwarding rules and establishes connection.
-func (h *Handler) handleRoutingRules(targetHost string, targetPort int) (net.Conn, string, string, error) {
+func (h *Handler) handleRoutingRules(
+	targetHost string, targetPort int,
+) (conn net.Conn, routingType, ruleName string, err error) {
 	rule := h.Config.FindRule(targetHost)
 
 	switch {
@@ -286,38 +292,44 @@ func (h *Handler) handleRoutingRules(targetHost string, targetPort int) (net.Con
 }
 
 // handleRuleMatch establishes connection through rule-specified proxy.
-func (h *Handler) handleRuleMatch(rule *config.Rule, targetHost string, targetPort int) (net.Conn, string, string, error) {
+func (h *Handler) handleRuleMatch(
+	rule *config.Rule, targetHost string, targetPort int,
+) (conn net.Conn, routingType, ruleName string, err error) {
 	if h.Debug {
 		log.Printf("Forwarding %s:%d through %s (rule: %s)", targetHost, targetPort, rule.Target, rule.Name)
 	}
 	metrics.RecordRuleMatch(rule.Target, rule.Name)
 	metrics.RecordProxyDecision(rule.Name)
 
-	conn, err := h.connectThroughSocks5(rule.Target, targetHost, targetPort, rule.Name)
+	conn, err = h.connectThroughSocks5(rule.Target, targetHost, targetPort, rule.Name)
 
 	return conn, "proxy", rule.Name, err
 }
 
 // handleDefaultTarget establishes connection through default proxy.
-func (h *Handler) handleDefaultTarget(targetHost string, targetPort int) (net.Conn, string, string, error) {
+func (h *Handler) handleDefaultTarget(
+	targetHost string, targetPort int,
+) (conn net.Conn, routingType, ruleName string, err error) {
 	if h.Debug {
 		log.Printf("Forwarding %s:%d through default target %s", targetHost, targetPort, h.Config.DefaultTarget)
 	}
 	metrics.RecordDefaultDecision("default_target")
 
-	conn, err := h.connectThroughSocks5(h.Config.DefaultTarget, targetHost, targetPort, "default_target")
+	conn, err = h.connectThroughSocks5(h.Config.DefaultTarget, targetHost, targetPort, "default_target")
 
 	return conn, "default", "default_target", err
 }
 
 // handleDirectConnection establishes direct connection as fallback.
-func (h *Handler) handleDirectConnection(targetHost string, targetPort int) (net.Conn, string, string, error) {
+func (h *Handler) handleDirectConnection(
+	targetHost string, targetPort int,
+) (conn net.Conn, routingType, ruleName string, err error) {
 	if h.Debug {
 		log.Printf("Direct connection to %s:%d", targetHost, targetPort)
 	}
 	metrics.RecordDirectDecision("fallback_direct")
 
-	conn, err := h.connectDirect(targetHost, targetPort, "fallback_direct")
+	conn, err = h.connectDirect(targetHost, targetPort, "fallback_direct")
 
 	return conn, "direct", "fallback_direct", err
 }
@@ -352,7 +364,9 @@ func (h *Handler) connectDirect(host string, port int, ruleName string) (net.Con
 }
 
 // connectThroughSocks5 establishes a connection through another SOCKS5 server.
-func (h *Handler) connectThroughSocks5(proxyAddr, targetHost string, targetPort int, ruleName string) (net.Conn, error) {
+func (h *Handler) connectThroughSocks5(
+	proxyAddr, targetHost string, targetPort int, ruleName string,
+) (net.Conn, error) {
 	start := time.Now()
 
 	// Connect to the SOCKS5 proxy
