@@ -149,8 +149,8 @@ curl http://localhost:2080/health
 ### Available Metrics
 
 #### Connection Metrics
-- `socks5_active_connections_total` - Number of currently active connections
-- `socks5_connections_total{status}` - Total connections handled (success/failed)
+- `socks5_active_connections` - Number of currently active SOCKS5 connections
+- `socks5_connections_total{status}` - Total number of SOCKS5 connections handled (success/failed)
 - `socks5_connection_duration_seconds{routing_type}` - Connection duration histogram
 
 #### Traffic Metrics
@@ -161,8 +161,8 @@ curl http://localhost:2080/health
 - `socks5_routing_decisions_total{decision,target}` - Routing decisions made
 - `socks5_rule_matches_total{rule_target,rule_name}` - Rule matches
 - `socks5_direct_host_matches_total` - Direct host matches
-- `socks5_active_rules_total` - Number of active forwarding rules
-- `socks5_active_direct_hosts_total` - Number of active direct host patterns
+- `socks5_active_rules` - Number of active forwarding rules
+- `socks5_active_direct_hosts` - Number of active direct host patterns
 
 #### Error Metrics
 - `socks5_connection_errors_total{error_type,target}` - Connection errors

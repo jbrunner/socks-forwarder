@@ -80,13 +80,6 @@ var (
 		Buckets: []float64{1024, 10240, 102400, 1048576, 10485760, 104857600}, // 1KB to 100MB/s
 	}, []string{"direction"}) // direction: upload, download
 
-	// Configuration metrics.
-	//nolint:gochecknoglobals // gochecknoglobals:global-variable - Prometheus metrics must be global
-	ConfigReloads = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: "socks5_config_reloads_total",
-		Help: "Total number of configuration reloads",
-	}, []string{"status"}) // status: success, failed
-
 	//nolint:gochecknoglobals // gochecknoglobals:global-variable - Prometheus metrics must be global
 	ActiveRules = promauto.NewGauge(prometheus.GaugeOpts{
 		Name: "socks5_active_rules",
