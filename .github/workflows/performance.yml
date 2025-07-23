@@ -15,7 +15,7 @@ jobs:
   benchmark:
     name: Benchmark Tests
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -26,17 +26,19 @@ jobs:
         go-version: ${{ env.GO_VERSION }}
 
     - name: Cache Go modules
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: |
           ~/.cache/go-build
           ~/go/pkg/mod
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
 
     - name: Run benchmarks
       run: |
         go test -bench=. -benchmem -run=^$ ./... | tee benchmark.txt
-        
+
     - name: Upload benchmark results
       uses: actions/upload-artifact@v4
       with:
@@ -58,7 +60,7 @@ jobs:
   load-test:
     name: Load Test
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
