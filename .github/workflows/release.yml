@@ -210,16 +210,9 @@ jobs:
 
           ### 🐳 Docker Images
 
-          **Distroless (Recommended for production):**
           ```bash
           docker pull ghcr.io/${{ github.repository }}:${{ needs.validate-tag.outputs.version }}
           docker run -p 1080:1080 ghcr.io/${{ github.repository }}:${{ needs.validate-tag.outputs.version }}
-          ```
-
-          **Scratch (Minimal size):**
-          ```bash
-          docker pull ghcr.io/${{ github.repository }}:${{ needs.validate-tag.outputs.version }}-scratch
-          docker run -p 1080:1080 ghcr.io/${{ github.repository }}:${{ needs.validate-tag.outputs.version }}-scratch
           ```
 
           ### 📥 Binary Downloads
