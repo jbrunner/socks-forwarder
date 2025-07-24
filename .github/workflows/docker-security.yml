@@ -3,13 +3,13 @@ name: Docker Security Scan
 on:
   push:
     branches: [ main ]
-    paths: 
+    paths:
       - 'Dockerfile'
       - 'docker-compose.yml'
       - '.github/workflows/docker-security.yml'
   pull_request:
     branches: [ main ]
-    paths: 
+    paths:
       - 'Dockerfile'
       - 'docker-compose.yml'
   schedule:
@@ -23,7 +23,7 @@ jobs:
   docker-security:
     name: Docker Image Security Scan
     runs-on: ubuntu-latest
-    
+
     permissions:
       contents: read
       security-events: write
@@ -31,7 +31,7 @@ jobs:
     strategy:
       matrix:
         dockerfile: [Dockerfile]
-        
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -97,7 +97,7 @@ jobs:
   dockerfile-lint:
     name: Dockerfile Lint
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -116,4 +116,3 @@ jobs:
       with:
         sarif_file: hadolint-dockerfile.sarif
         category: hadolint-dockerfile
-
