@@ -102,10 +102,14 @@ func (s *Server) Stop() {
 
 	close(s.done)
 	if s.listener != nil {
-		s.listener.Close()
+		if err := s.listener.Close(); err != nil {
+			log.Printf("Error closing listener: %v", err)
+		}
 	}
 	if s.metricsServer != nil {
-		s.metricsServer.Close()
+		if err := s.metricsServer.Close(); err != nil {
+			log.Printf("Error closing metrics server: %v", err)
+		}
 	}
 }
 
@@ -116,7 +120,9 @@ func (s *Server) handleConnection(conn net.Conn) {
 		if s.config.Debug {
 			log.Printf("Closing connection from %s", conn.RemoteAddr())
 		}
-		conn.Close()
+		if err := conn.Close(); err != nil {
+			log.Printf("Error closing connection: %v", err)
+		}
 	}()
 
 	if s.config.Debug {
@@ -306,7 +312,9 @@ func (s *Server) checkLiveness() bool {
 
 	conn, err := dialer.DialContext(ctx, "tcp", "127.0.0.1:0")
 	if err == nil {
-		conn.Close()
+		if closeErr := conn.Close(); closeErr != nil {
+			log.Printf("Error closing test connection: %v", closeErr)
+		}
 	}
 	// Note: We don't fail on this error as it might be due to local network config
 
