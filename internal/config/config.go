@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -38,7 +39,7 @@ type Config struct {
 
 // LoadConfig loads configuration from a YAML file.
 func LoadConfig(filename string) (*Config, error) {
-	data, err := os.ReadFile(filename)
+	data, err := os.ReadFile(filepath.Clean(filename))
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config file %s: %w", filename, err)
 	}

@@ -380,7 +380,9 @@ func (h *Handler) connectThroughSocks5(
 
 	// Perform SOCKS5 handshake
 	if err := h.performSocks5Handshake(proxyConn, targetHost, targetPort); err != nil {
-		proxyConn.Close()
+		if closeErr := proxyConn.Close(); closeErr != nil {
+			log.Printf("Error closing proxy connection: %v", closeErr)
+		}
 		metrics.RecordProxyError("handshake_failed", ruleName)
 
 		return nil, fmt.Errorf("SOCKS5 handshake failed: %w", err)
@@ -479,10 +481,12 @@ func (h *Handler) addDomainName(request []byte, targetHost string) []byte {
 // addPort adds port to SOCKS5 request.
 func (h *Handler) addPort(request []byte, targetPort int) []byte {
 	portBytes := make([]byte, SOCKS5PortSize)
+	// Ensure port is within valid uint16 range to prevent integer overflow
 	if targetPort > 65535 || targetPort < 0 {
 		targetPort = 65535
 	}
-	binary.BigEndian.PutUint16(portBytes, uint16(targetPort)) //nolint:gosec // G115: Range already validated above
+	// Safe conversion: targetPort is guaranteed to be in range [0, 65535]
+	binary.BigEndian.PutUint16(portBytes, uint16(targetPort)) // #nosec G115 -- targetPort range validated above
 
 	return append(request, portBytes...)
 }
@@ -523,10 +527,12 @@ func (h *Handler) sendReply(conn net.Conn, reply byte, ip net.IP, port int) erro
 	}
 
 	portBytes := make([]byte, SOCKS5PortSize)
+	// Ensure port is within valid uint16 range to prevent integer overflow
 	if port > 65535 || port < 0 {
 		port = 65535
 	}
-	binary.BigEndian.PutUint16(portBytes, uint16(port)) //nolint:gosec // G115: Range already validated above
+	// Safe conversion: port is guaranteed to be in range [0, 65535]
+	binary.BigEndian.PutUint16(portBytes, uint16(port)) // #nosec G115 -- port range validated above
 	response = append(response, portBytes...)
 
 	_, err := conn.Write(response)
@@ -568,8 +574,12 @@ func (h *Handler) forwardData(clientConn, targetConn net.Conn, routingType, rule
 	metrics.RecordConnectionDuration(duration, routingType, ruleName)
 
 	// Close both connections to stop the other goroutine
-	clientConn.Close()
-	targetConn.Close()
+	if closeErr := clientConn.Close(); closeErr != nil {
+		log.Printf("Error closing client connection: %v", closeErr)
+	}
+	if closeErr := targetConn.Close(); closeErr != nil {
+		log.Printf("Error closing target connection: %v", closeErr)
+	}
 
 	return err
 }

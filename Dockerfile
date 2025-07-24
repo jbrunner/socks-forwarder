@@ -2,11 +2,10 @@
 # Stage 1: Build the application
 FROM golang:1.24-alpine AS builder
 
-# Install git and ca-certificates
-RUN apk add --no-cache git ca-certificates tzdata
+# Install git and ca-certificates, and create a non-root user for building
+RUN apk add --no-cache git ca-certificates tzdata && \
+    adduser -D -s /bin/sh -u 1001 builder
 
-# Create a non-root user for building
-RUN adduser -D -s /bin/sh -u 1001 builder
 USER builder
 
 # Set working directory
@@ -27,15 +26,13 @@ ARG BUILDPLATFORM
 ARG TARGETOS
 ARG TARGETARCH
 
-# Build the application with static linking
+# Build the application with static linking and verify it works
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build \
     -ldflags='-w -s -extldflags "-static"' \
     -a -installsuffix cgo \
     -o socks-forwarder \
-    ./cmd/socks-forwarder
-
-# Verify the binary works
-RUN ./socks-forwarder -help
+    ./cmd/socks-forwarder && \
+    ./socks-forwarder -help
 
 # Stage 2: Create the runtime image using distroless
 FROM gcr.io/distroless/static:nonroot
