@@ -14,8 +14,8 @@ type Rule struct {
 	Target string `yaml:"target"`
 	// Hostname patterns to match (supports wildcards with *)
 	Hostnames []string `yaml:"hostnames"`
-	// Description of the rule (optional)
-	Description string `yaml:"description,omitempty"`
+	// Name of the rule (optional)
+	Name string `yaml:"name,omitempty"`
 }
 
 // Config holds the application configuration.

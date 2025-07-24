@@ -37,26 +37,26 @@ rules:
       - "*.internal.company.com"
       - "intranet.company.com"
       - "admin.company.com"
-    description: "Company internal services"
-  
+    name: "Company internal services"
+
   # Example: Forward development and staging environments
   - target: "dev-proxy.example.com:1080"
     hostnames:
       - "dev.example.com"
       - "*.dev.example.com"
       - "*.staging.example.com"
-    description: "Development and staging environments"
-  
+    name: "Development and staging environments"
+
   # Example: Forward specific services through another proxy
   - target: "service-proxy.example.com:1080"
     hostnames:
       - "api.service.com"
       - "dashboard.service.com"
       - "*.monitoring.service.com"
-    description: "External service integrations"
-  
+    name: "External service integrations"
+
   # Example: Forward specific IP ranges through a different proxy
   # Note: This would require additional IP matching logic in the code
   # - hostname: "192.168.1.*"
   #   target: "internal-proxy.company.com:1080"
-  #   description: "Internal network"
+  #   name: "Internal network"

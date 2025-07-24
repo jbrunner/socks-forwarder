@@ -87,13 +87,13 @@ type Handler struct {
 // Handle processes a SOCKS5 connection.
 func (h *Handler) Handle(clientConn net.Conn) error {
 	// Track active connection
-	metrics.IncrementActiveConnections()
-	defer metrics.DecrementActiveConnections()
+	metrics.IncrementActiveConnections("pending")
+	defer metrics.DecrementActiveConnections("pending")
 
 	// Step 1: Authentication negotiation
 	if err := h.handleAuthentication(clientConn); err != nil {
 		metrics.RecordConnectionFailure()
-		metrics.RecordConnectionError("auth_failed", clientConn.RemoteAddr().String())
+		metrics.RecordConnectionError("auth_failed", "unknown")
 
 		return fmt.Errorf("authentication failed: %w", err)
 	}
@@ -101,7 +101,7 @@ func (h *Handler) Handle(clientConn net.Conn) error {
 	// Step 2: Handle SOCKS5 request
 	if err := h.handleRequest(clientConn); err != nil {
 		metrics.RecordConnectionFailure()
-		metrics.RecordConnectionError("request_failed", clientConn.RemoteAddr().String())
+		metrics.RecordConnectionError("request_failed", "unknown")
 
 		return fmt.Errorf("request handling failed: %w", err)
 	}
@@ -171,7 +171,7 @@ func (h *Handler) handleRequest(clientConn net.Conn) error {
 	}
 
 	// Establish target connection based on routing rules
-	targetConn, routingType, err := h.establishTargetConnection(targetHost, targetPort)
+	targetConn, routingType, ruleName, err := h.establishTargetConnection(targetHost, targetPort)
 	if err != nil {
 		_ = h.sendReply(clientConn, replyConnectionRefused, net.IPv4zero, 0)
 
@@ -185,7 +185,7 @@ func (h *Handler) handleRequest(clientConn net.Conn) error {
 	}
 
 	// Start bidirectional data forwarding
-	return h.forwardData(clientConn, targetConn, routingType)
+	return h.forwardData(clientConn, targetConn, routingType, ruleName)
 }
 
 // parseRequest reads and parses the SOCKS5 request, returning target host and port.
@@ -249,7 +249,9 @@ func (h *Handler) parseTargetAddress(
 }
 
 // establishTargetConnection determines routing and establishes connection.
-func (h *Handler) establishTargetConnection(targetHost string, targetPort int) (net.Conn, string, error) {
+func (h *Handler) establishTargetConnection(
+	targetHost string, targetPort int,
+) (conn net.Conn, routingType, ruleName string, err error) {
 	// Check if this host should be served directly (bypasses rules)
 	if h.Config.ShouldServeDirect(targetHost) {
 		return h.handleDirectHost(targetHost, targetPort)
@@ -259,20 +261,24 @@ func (h *Handler) establishTargetConnection(targetHost string, targetPort int) (
 }
 
 // handleDirectHost establishes direct connection for configured direct hosts.
-func (h *Handler) handleDirectHost(targetHost string, targetPort int) (net.Conn, string, error) {
+func (h *Handler) handleDirectHost(
+	targetHost string, targetPort int,
+) (conn net.Conn, routingType, ruleName string, err error) {
 	if h.Debug {
 		log.Printf("Direct connection to %s:%d (configured as direct host)", targetHost, targetPort)
 	}
 	metrics.RecordDirectHostMatch()
-	metrics.RecordDirectDecision(targetHost)
+	metrics.RecordDirectDecision("direct_host")
 
-	conn, err := h.connectDirect(targetHost, targetPort)
+	conn, err = h.connectDirect(targetHost, targetPort, "direct_host")
 
-	return conn, "direct", err
+	return conn, "direct", "direct_host", err
 }
 
 // handleRoutingRules processes forwarding rules and establishes connection.
-func (h *Handler) handleRoutingRules(targetHost string, targetPort int) (net.Conn, string, error) {
+func (h *Handler) handleRoutingRules(
+	targetHost string, targetPort int,
+) (conn net.Conn, routingType, ruleName string, err error) {
 	rule := h.Config.FindRule(targetHost)
 
 	switch {
@@ -286,40 +292,46 @@ func (h *Handler) handleRoutingRules(targetHost string, targetPort int) (net.Con
 }
 
 // handleRuleMatch establishes connection through rule-specified proxy.
-func (h *Handler) handleRuleMatch(rule *config.Rule, targetHost string, targetPort int) (net.Conn, string, error) {
+func (h *Handler) handleRuleMatch(
+	rule *config.Rule, targetHost string, targetPort int,
+) (conn net.Conn, routingType, ruleName string, err error) {
 	if h.Debug {
-		log.Printf("Forwarding %s:%d through %s (rule: %s)", targetHost, targetPort, rule.Target, rule.Description)
+		log.Printf("Forwarding %s:%d through %s (rule: %s)", targetHost, targetPort, rule.Target, rule.Name)
 	}
-	metrics.RecordRuleMatch(rule.Target, rule.Description)
-	metrics.RecordProxyDecision(rule.Target)
+	metrics.RecordRuleMatch(rule.Target, rule.Name)
+	metrics.RecordProxyDecision(rule.Name)
 
-	conn, err := h.connectThroughSocks5(rule.Target, targetHost, targetPort)
+	conn, err = h.connectThroughSocks5(rule.Target, targetHost, targetPort, rule.Name)
 
-	return conn, "proxy", err
+	return conn, "proxy", rule.Name, err
 }
 
 // handleDefaultTarget establishes connection through default proxy.
-func (h *Handler) handleDefaultTarget(targetHost string, targetPort int) (net.Conn, string, error) {
+func (h *Handler) handleDefaultTarget(
+	targetHost string, targetPort int,
+) (conn net.Conn, routingType, ruleName string, err error) {
 	if h.Debug {
 		log.Printf("Forwarding %s:%d through default target %s", targetHost, targetPort, h.Config.DefaultTarget)
 	}
-	metrics.RecordDefaultDecision(h.Config.DefaultTarget)
+	metrics.RecordDefaultDecision("default_target")
 
-	conn, err := h.connectThroughSocks5(h.Config.DefaultTarget, targetHost, targetPort)
+	conn, err = h.connectThroughSocks5(h.Config.DefaultTarget, targetHost, targetPort, "default_target")
 
-	return conn, "default", err
+	return conn, "default", "default_target", err
 }
 
 // handleDirectConnection establishes direct connection as fallback.
-func (h *Handler) handleDirectConnection(targetHost string, targetPort int) (net.Conn, string, error) {
+func (h *Handler) handleDirectConnection(
+	targetHost string, targetPort int,
+) (conn net.Conn, routingType, ruleName string, err error) {
 	if h.Debug {
 		log.Printf("Direct connection to %s:%d", targetHost, targetPort)
 	}
-	metrics.RecordDirectDecision(targetHost)
+	metrics.RecordDirectDecision("fallback_direct")
 
-	conn, err := h.connectDirect(targetHost, targetPort)
+	conn, err = h.connectDirect(targetHost, targetPort, "fallback_direct")
 
-	return conn, "direct", err
+	return conn, "direct", "fallback_direct", err
 }
 
 // sendSuccessReply sends SOCKS5 success reply to client.
@@ -333,33 +345,35 @@ func (h *Handler) sendSuccessReply(clientConn, targetConn net.Conn) error {
 }
 
 // connectDirect establishes a direct connection to the target.
-func (h *Handler) connectDirect(host string, port int) (net.Conn, error) {
+func (h *Handler) connectDirect(host string, port int, ruleName string) (net.Conn, error) {
 	start := time.Now()
 	address := net.JoinHostPort(host, strconv.Itoa(port))
 
 	dialer := &net.Dialer{Timeout: DialTimeout}
 	conn, err := dialer.Dial("tcp", address)
 	if err != nil {
-		metrics.RecordConnectionError("dial_failed", address)
+		metrics.RecordConnectionError("dial_failed", ruleName)
 
 		return nil, fmt.Errorf("failed to dial %s: %w", address, err)
 	}
 
 	// Record connection establishment time
-	metrics.ConnectionEstablishmentTime.WithLabelValues("direct").Observe(time.Since(start).Seconds())
+	metrics.RecordConnectionEstablishment(time.Since(start).Seconds(), "direct", ruleName)
 
 	return conn, nil
 }
 
 // connectThroughSocks5 establishes a connection through another SOCKS5 server.
-func (h *Handler) connectThroughSocks5(proxyAddr, targetHost string, targetPort int) (net.Conn, error) {
+func (h *Handler) connectThroughSocks5(
+	proxyAddr, targetHost string, targetPort int, ruleName string,
+) (net.Conn, error) {
 	start := time.Now()
 
 	// Connect to the SOCKS5 proxy
 	dialer := &net.Dialer{Timeout: DialTimeout}
 	proxyConn, err := dialer.Dial("tcp", proxyAddr)
 	if err != nil {
-		metrics.RecordProxyError(proxyAddr, "connection_failed")
+		metrics.RecordProxyError("connection_failed", ruleName)
 
 		return nil, fmt.Errorf("failed to connect to proxy %s: %w", proxyAddr, err)
 	}
@@ -367,13 +381,13 @@ func (h *Handler) connectThroughSocks5(proxyAddr, targetHost string, targetPort 
 	// Perform SOCKS5 handshake
 	if err := h.performSocks5Handshake(proxyConn, targetHost, targetPort); err != nil {
 		proxyConn.Close()
-		metrics.RecordProxyError(proxyAddr, "handshake_failed")
+		metrics.RecordProxyError("handshake_failed", ruleName)
 
 		return nil, fmt.Errorf("SOCKS5 handshake failed: %w", err)
 	}
 
 	// Record successful proxy connection establishment time
-	metrics.ConnectionEstablishmentTime.WithLabelValues("proxy").Observe(time.Since(start).Seconds())
+	metrics.RecordConnectionEstablishment(time.Since(start).Seconds(), "proxy", ruleName)
 
 	return proxyConn, nil
 }
@@ -524,21 +538,25 @@ func (h *Handler) sendReply(conn net.Conn, reply byte, ip net.IP, port int) erro
 }
 
 // forwardData forwards data bidirectionally between two connections.
-func (h *Handler) forwardData(clientConn, targetConn net.Conn, routingType string) error {
+func (h *Handler) forwardData(clientConn, targetConn net.Conn, routingType, ruleName string) error {
 	done := make(chan error, GoroutineChannelBufferSize)
 	startTime := time.Now()
+
+	// Track rule-specific active connection during data transfer
+	metrics.IncrementRuleActiveConnections(ruleName)
+	defer metrics.DecrementRuleActiveConnections(ruleName)
 
 	// Forward data from client to target
 	go func() {
 		written, err := io.Copy(targetConn, clientConn)
-		metrics.RecordBytesOut(float64(written), routingType)
+		metrics.RecordBytesOut(float64(written), routingType, ruleName)
 		done <- err
 	}()
 
 	// Forward data from target to client
 	go func() {
 		written, err := io.Copy(clientConn, targetConn)
-		metrics.RecordBytesIn(float64(written), routingType)
+		metrics.RecordBytesIn(float64(written), routingType, ruleName)
 		done <- err
 	}()
 
@@ -547,7 +565,7 @@ func (h *Handler) forwardData(clientConn, targetConn net.Conn, routingType strin
 
 	// Record connection duration
 	duration := time.Since(startTime).Seconds()
-	metrics.ConnectionDuration.WithLabelValues(routingType).Observe(duration)
+	metrics.RecordConnectionDuration(duration, routingType, ruleName)
 
 	// Close both connections to stop the other goroutine
 	clientConn.Close()
