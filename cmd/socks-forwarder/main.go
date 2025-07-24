@@ -57,7 +57,7 @@ func main() {
 	// Create and start the SOCKS5 server
 	srv := server.NewServer(cfg)
 
-	log.Printf("Starting SOCKS5 forwarder on port %d", cfg.Port)
+	log.Printf("Starting SOCKS5 forwarder %s on port %d", version, cfg.Port)
 	log.Printf("Loaded %d forwarding rules", len(cfg.Rules))
 	log.Printf("Loaded %d direct hosts", len(cfg.DirectHosts))
 
