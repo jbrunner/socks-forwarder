@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
     container_name: socks5-forwarder
     restart: unless-stopped
-    
+
     # Network configuration
     ports:
       - "1080:1080"      # SOCKS5 proxy port
@@ -17,7 +17,7 @@ services:
     security_opt:
       - no-new-privileges:true
     read_only: true
-    
+
     # Resource limits
     deploy:
       resources:
@@ -27,22 +27,22 @@ services:
         reservations:
           memory: 32M
           cpus: '0.1'
-    
+
     # Environment variables
     environment:
       - TZ=UTC
-    
+
     # Mount custom configuration
     volumes:
       - ./config.yaml:/etc/socks-forwarder/config.yaml:ro
-    
+
     # Logging configuration
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
-    
+
     # Health check
     healthcheck:
       test: ["/usr/local/bin/socks-forwarder", "-help"]
