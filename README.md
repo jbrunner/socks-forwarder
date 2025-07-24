@@ -136,7 +136,7 @@ Usage of ./socks-forwarder:
 
 ### Prometheus Metrics
 
-The application exposes comprehensive Prometheus metrics for monitoring and observability:
+The application exposes comprehensive Prometheus metrics for monitoring and observability if `metricsEnabled`.
 
 ```bash
 # Access metrics endpoint (default: port + 1000)
@@ -145,6 +145,16 @@ curl http://localhost:2080/metrics
 # Health check endpoint
 curl http://localhost:2080/health
 ```
+
+### Health Endpoints
+
+The application provides Kubernetes-compatible health check endpoints:
+
+- **`/health`** - General health check combining readiness and liveness
+- **`/readyz`** - Readiness probe indicating when SOCKS listener is ready to accept traffic
+- **`/livez`** - Liveness probe with internal health validations (memory, goroutines, config validity)
+
+All endpoints return JSON responses with detailed status information and appropriate HTTP status codes (200 OK / 503 Service Unavailable).
 
 ### Available Metrics
 
