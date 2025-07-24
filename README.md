@@ -136,7 +136,7 @@ Usage of ./socks-forwarder:
 
 ### Prometheus Metrics
 
-The application exposes comprehensive Prometheus metrics for monitoring and observability:
+The application exposes comprehensive Prometheus metrics for monitoring and observability if `metricsEnabled`.
 
 ```bash
 # Access metrics endpoint (default: port + 1000)
