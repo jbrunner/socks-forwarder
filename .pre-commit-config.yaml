@@ -1,0 +1,58 @@
+# Pre-commit configuration for SOCKS5 Forwarder
+# Install pre-commit: pip install pre-commit
+# Install hooks: pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  # Local hooks that run our Makefile targets
+  - repo: local
+    hooks:
+      # Format Go code
+      - id: go-fmt
+        name: Go Format (make fmt)
+        entry: make fmt
+        language: system
+        types: [go]
+        pass_filenames: false
+
+      # Run unit tests
+      - id: go-test
+        name: Go Tests (make test)
+        entry: make test
+        language: system
+        types: [go]
+        pass_filenames: false
+
+      # Run linter
+      - id: go-lint
+        name: Go Lint (make lint)
+        entry: make lint
+        language: system
+        types: [go]
+        pass_filenames: false
+
+      # Run security checks
+      - id: go-security
+        name: Go Security (make security)
+        entry: make security
+        language: system
+        types: [go]
+        pass_filenames: false
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      # Prevent commits to protected branches
+      - id: no-commit-to-branch
+        args: ['--branch', 'main', '--branch', 'gh-pages']
+      # Check for files that contain merge conflict strings
+      - id: check-merge-conflict
+      # Check yaml files for parseable syntax
+      - id: check-yaml
+        args: ['--unsafe']  # Allow custom YAML tags
+      # Ensure files end in a newline
+      - id: end-of-file-fixer
+        exclude: '^.*\.(png|jpg|jpeg|gif|ico|svg)$'
+      # Remove trailing whitespace
+      - id: trailing-whitespace
+        exclude: '^.*\.(md|markdown)$'
