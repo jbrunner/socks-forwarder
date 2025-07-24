@@ -88,7 +88,7 @@ type Handler struct {
 func (h *Handler) Handle(clientConn net.Conn) error {
 	// Track active connection as pending initially
 	metrics.IncrementActiveConnections("pending")
-	
+
 	// This variable will track the actual rule name for cleanup
 	var actualRuleName string
 	defer func() {
@@ -205,7 +205,7 @@ func (h *Handler) handleRequest(clientConn net.Conn) (string, error) {
 	if err := h.forwardData(clientConn, targetConn, routingType, ruleName); err != nil {
 		return "", err
 	}
-	
+
 	return ruleName, nil
 }
 
