@@ -120,8 +120,13 @@ func (s *Server) handleConnection(conn net.Conn) {
 		if s.config.Debug {
 			log.Printf("Closing connection from %s", conn.RemoteAddr())
 		}
-		if err := conn.Close(); err != nil {
-			log.Printf("Error closing connection: %v", err)
+		if conn != nil {
+			if err := conn.Close(); err != nil {
+				// Only log if it's not already closed
+				if !errors.Is(err, net.ErrClosed) {
+					log.Printf("Error closing connection: %v", err)
+				}
+			}
 		}
 	}()
 
