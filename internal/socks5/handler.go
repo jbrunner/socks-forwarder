@@ -86,9 +86,19 @@ type Handler struct {
 
 // Handle processes a SOCKS5 connection.
 func (h *Handler) Handle(clientConn net.Conn) error {
-	// Track active connection
+	// Track active connection as pending initially
 	metrics.IncrementActiveConnections("pending")
-	defer metrics.DecrementActiveConnections("pending")
+
+	// This variable will track the actual rule name for cleanup
+	var actualRuleName string
+	defer func() {
+		// Decrement using the actual rule name, or "pending" if we never determined it
+		if actualRuleName != "" {
+			metrics.DecrementActiveConnections(actualRuleName)
+		} else {
+			metrics.DecrementActiveConnections("pending")
+		}
+	}()
 
 	// Step 1: Authentication negotiation
 	if err := h.handleAuthentication(clientConn); err != nil {
@@ -99,12 +109,16 @@ func (h *Handler) Handle(clientConn net.Conn) error {
 	}
 
 	// Step 2: Handle SOCKS5 request
-	if err := h.handleRequest(clientConn); err != nil {
+	ruleName, err := h.handleRequest(clientConn)
+	if err != nil {
 		metrics.RecordConnectionFailure()
 		metrics.RecordConnectionError("request_failed", "unknown")
 
 		return fmt.Errorf("request handling failed: %w", err)
 	}
+
+	// Update the actual rule name for proper cleanup
+	actualRuleName = ruleName
 
 	// Record successful connection
 	metrics.RecordConnectionSuccess()
@@ -159,11 +173,11 @@ func (h *Handler) handleAuthentication(conn net.Conn) error {
 }
 
 // handleRequest handles the SOCKS5 connection request.
-func (h *Handler) handleRequest(clientConn net.Conn) error {
+func (h *Handler) handleRequest(clientConn net.Conn) (string, error) {
 	// Read and validate request
 	targetHost, targetPort, err := h.parseRequest(clientConn)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if h.Debug {
@@ -175,17 +189,24 @@ func (h *Handler) handleRequest(clientConn net.Conn) error {
 	if err != nil {
 		_ = h.sendReply(clientConn, replyConnectionRefused, net.IPv4zero, 0)
 
-		return fmt.Errorf("failed to establish target connection: %w", err)
+		return "", fmt.Errorf("failed to establish target connection: %w", err)
 	}
 	defer targetConn.Close()
 
+	// Transition the connection from "pending" to the actual rule name
+	metrics.TransitionConnectionFromPending(ruleName)
+
 	// Send success reply
 	if err := h.sendSuccessReply(clientConn, targetConn); err != nil {
-		return err
+		return "", err
 	}
 
 	// Start bidirectional data forwarding
-	return h.forwardData(clientConn, targetConn, routingType, ruleName)
+	if err := h.forwardData(clientConn, targetConn, routingType, ruleName); err != nil {
+		return "", err
+	}
+
+	return ruleName, nil
 }
 
 // parseRequest reads and parses the SOCKS5 request, returning target host and port.
