@@ -182,3 +182,12 @@ func RecordConnectionEstablishment(duration float64, connectionType, ruleName st
 func RecordDataTransferRate(rate float64, direction, ruleName string) {
 	DataTransferRate.WithLabelValues(direction, ruleName).Observe(rate)
 }
+
+// TransitionConnectionFromPending transitions a connection from "pending" to the actual rule name.
+// This should be called when a connection gets assigned to a specific rule.
+func TransitionConnectionFromPending(ruleName string) {
+	// Decrement the pending connection
+	ActiveConnectionsByRule.WithLabelValues("pending").Dec()
+	// Increment the actual rule connection
+	ActiveConnectionsByRule.WithLabelValues(ruleName).Inc()
+}
