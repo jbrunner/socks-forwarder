@@ -250,7 +250,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Update Docker Hub description
-      uses: peter-evans/dockerhub-description@v3
+      uses: peter-evans/dockerhub-description@v4
       if: needs.validate-tag.outputs.is-prerelease == 'false'
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
