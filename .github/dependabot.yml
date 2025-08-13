@@ -9,15 +9,14 @@ updates:
       time: "06:00"
     open-pull-requests-limit: 5
     reviewers:
-      - "@joshua"  # Replace with actual GitHub username
+      - "@jbrunner"
     assignees:
-      - "@joshua"  # Replace with actual GitHub username
+      - "@jbrunner"
     commit-message:
       prefix: "deps"
       include: "scope"
     labels:
       - "dependencies"
-      - "go"
     allow:
       - dependency-type: "direct"
       - dependency-type: "indirect"
@@ -31,15 +30,14 @@ updates:
       time: "06:00"
     open-pull-requests-limit: 3
     reviewers:
-      - "@joshua"  # Replace with actual GitHub username
+      - "@jbrunner"
     assignees:
-      - "@joshua"  # Replace with actual GitHub username
+      - "@jbrunner"
     commit-message:
       prefix: "docker"
       include: "scope"
     labels:
       - "dependencies"
-      - "docker"
 
   # GitHub Actions
   - package-ecosystem: "github-actions"
@@ -50,12 +48,11 @@ updates:
       time: "06:00"
     open-pull-requests-limit: 3
     reviewers:
-      - "@joshua"  # Replace with actual GitHub username
+      - "@jbrunner"
     assignees:
-      - "@joshua"  # Replace with actual GitHub username
+      - "@jbrunner"
     commit-message:
       prefix: "ci"
       include: "scope"
     labels:
       - "dependencies"
-      - "github-actions"
