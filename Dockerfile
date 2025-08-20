@@ -1,6 +1,6 @@
 # Rootless Dockerfile for SOCKS5 Forwarder using distroless
 # Stage 1: Build the application
-FROM golang:1.24-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 # Install git and ca-certificates, and create a non-root user for building
 RUN apk add --no-cache git ca-certificates tzdata && \
