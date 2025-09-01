@@ -10,7 +10,13 @@ debug: false
 metricsEnabled: true
 
 # Metrics server port (optional, defaults to main port + 1000)
-metricsPort: 8080
+metricsPort: 9113
+
+# Enable HTTP proxy server (defaults to true)
+proxyEnabled: true
+
+# HTTP proxy port (defaults to 8080)
+proxyPort: 8080
 
 # Direct hosts - these will always be served directly, bypassing all rules
 # Supports wildcard patterns like *.example.com

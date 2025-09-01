@@ -11,7 +11,7 @@ services:
     # Network configuration
     ports:
       - "1080:1080"      # SOCKS5 proxy port
-      - "8080:8080"      # Metrics port
+      - "9113:9113"      # Metrics port
 
     # Security settings for rootless container
     security_opt:
