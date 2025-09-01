@@ -35,6 +35,11 @@ type Config struct {
 	MetricsEnabled bool `yaml:"metricsEnabled"`
 	// Port for metrics server (optional, defaults to main port + 1000)
 	MetricsPort int `yaml:"metricsPort,omitempty"`
+
+	// Enable HTTP proxy server (default: true)
+	ProxyEnabled bool `yaml:"proxyEnabled"`
+	// Port for HTTP proxy server (default: 8080)
+	ProxyPort int `yaml:"proxyPort,omitempty"`
 }
 
 // LoadConfig loads configuration from a YAML file.
@@ -53,9 +58,22 @@ func LoadConfig(filename string) (*Config, error) {
 	if cfg.Port == 0 {
 		cfg.Port = 1080
 	}
+	if cfg.ProxyPort == 0 {
+		cfg.ProxyPort = 8080
+	}
+	// ProxyEnabled defaults to true if not explicitly set to false
+	var tempProxy struct {
+		ProxyEnabled *bool `yaml:"proxyEnabled"`
+	}
+	if err := yaml.Unmarshal(data, &tempProxy); err == nil {
+		if tempProxy.ProxyEnabled == nil {
+			cfg.ProxyEnabled = true
+		}
+	} else {
+		cfg.ProxyEnabled = true
+	}
 
-	// metricsEnabled defaults to true if not explicitly set to false
-	// We need to check if it was explicitly set in the YAML
+	// metricsEnabled defaults to true if not explicitly set in the YAML
 	var tempCfg struct {
 		MetricsEnabled *bool `yaml:"metricsEnabled"`
 	}

@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -41,17 +43,21 @@ func main() {
 		return
 	}
 
+	run(*configFile, *port)
+}
+
+func run(configFile string, port int) {
 	// Load configuration
-	cfg, err := config.LoadConfig(*configFile)
+	cfg, err := config.LoadConfig(configFile)
 	if err != nil {
-		log.Printf("Warning: Could not load config file %s: %v", *configFile, err)
+		log.Printf("Warning: Could not load config file %s: %v", configFile, err)
 		log.Println("Using default configuration")
 		cfg = config.DefaultConfig()
 	}
 
 	// Override port if specified via command line
-	if *port != 1080 {
-		cfg.Port = *port
+	if port != 1080 {
+		cfg.Port = port
 	}
 
 	// Create and start the SOCKS5 server
@@ -67,6 +73,17 @@ func main() {
 			log.Fatalf("Server failed to start: %v", err)
 		}
 	}()
+
+	// Start HTTP proxy if enabled
+	if cfg.ProxyEnabled {
+		proxyAddr := ":" + fmt.Sprint(cfg.ProxyPort)
+		go func() {
+			httpProxy := server.NewHTTPProxyServer(cfg, cfg.Debug)
+			if err := httpProxy.ListenAndServe(context.Background(), proxyAddr); err != nil {
+				log.Printf("HTTP proxy server error: %v", err)
+			}
+		}()
+	}
 
 	// Wait for interrupt signal
 	sigChan := make(chan os.Signal, 1)

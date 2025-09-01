@@ -52,8 +52,9 @@ COPY --from=builder /app/config.yaml /etc/socks-forwarder/config.yaml
 # The distroless nonroot image already has a non-root user (uid 65532)
 # No need to create or switch users
 
-# Expose the default SOCKS5 port and metrics port
+# Expose the default SOCKS5, http proxy and metrics port
 EXPOSE 1080
+EXPOSE 8080
 EXPOSE 9113
 
 # Set default configuration path
