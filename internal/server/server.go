@@ -29,7 +29,7 @@ type Server struct {
 	startTime     time.Time
 }
 
-const DefaultPort = 8080
+const DefaultPort = 9113
 
 const (
 	// Health check thresholds.

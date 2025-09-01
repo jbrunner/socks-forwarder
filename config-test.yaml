@@ -2,7 +2,7 @@
 port: 1080
 debug: true
 metricsEnabled: true
-metricsPort: 8080
+metricsPort: 9113
 
 # Direct hosts - these bypass all forwarding rules
 directHosts:

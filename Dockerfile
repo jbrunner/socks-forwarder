@@ -54,7 +54,7 @@ COPY --from=builder /app/config.yaml /etc/socks-forwarder/config.yaml
 
 # Expose the default SOCKS5 port and metrics port
 EXPOSE 1080
-EXPOSE 8080
+EXPOSE 9113
 
 # Set default configuration path
 ENV CONFIG_FILE=/etc/socks-forwarder/config.yaml

@@ -27,7 +27,7 @@ SOCKS5 proxy server that forwards connections based on hostname rules to other S
 
 3. **Run with custom configuration:**
    ```bash
-   ./socks-forwarder -config my-config.yaml -port 8080
+   ./socks-forwarder -config my-config.yaml -port 9113
    ```
 
 ### Testing with curl
@@ -91,7 +91,7 @@ rules:
 - **`port`**: Port number to listen for SOCKS5 connections (default: 1080)
 - **`debug`**: Enable debug logging (default: false)
 - **`metricsEnabled`**: Enable Prometheus metrics server (default: true)
-- **`metricsPort`**: Port for Prometheus metrics server (optional, defaults to main port + 1000)
+- **`metricsPort`**: Port for Prometheus metrics server (optional, defaults to 9113)
 - **`directHosts`**: Array of hostnames that will always be served directly, bypassing all forwarding rules (supports wildcards)
 - **`defaultTarget`**: Default SOCKS5 server for unmatched requests (optional)
 - **`rules`**: Array of forwarding rules with the following properties:
@@ -189,7 +189,7 @@ Example Prometheus configuration:
 scrape_configs:
   - job_name: 'socks5-forwarder'
     static_configs:
-      - targets: ['localhost:8080']
+      - targets: ['localhost:9113']
     scrape_interval: 15s
 ```
 
