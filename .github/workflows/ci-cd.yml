@@ -64,7 +64,7 @@ jobs:
         name: codecov-umbrella
 
     - name: Upload coverage artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: coverage-report
         path: |
@@ -116,7 +116,7 @@ jobs:
         go build -ldflags="-w -s" -o "${BINARY_NAME}" ./cmd/socks-forwarder
 
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: binaries-${{ matrix.os }}-${{ matrix.arch }}
         path: socks-forwarder-*

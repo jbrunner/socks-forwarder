@@ -89,7 +89,7 @@ jobs:
         docker images test-image:latest --format "Size: {{.Size}}" >> security-report-${{ matrix.dockerfile }}.md
 
     - name: Upload security report
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: security-report-${{ matrix.dockerfile }}
         path: security-report-${{ matrix.dockerfile }}.md
