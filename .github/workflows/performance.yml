@@ -40,7 +40,7 @@ jobs:
         go test -bench=. -benchmem -run=^$ ./... | tee benchmark.txt
 
     - name: Upload benchmark results
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: benchmark-results
         path: benchmark.txt
