@@ -440,7 +440,7 @@ func (h *Handler) performSocks5Auth(conn net.Conn) error {
 		return fmt.Errorf("failed to read method selection response: %w", err)
 	}
 
-	if response[0] != socksVersion5 || response[1] != authNone {
+	if len(response) < 2 || response[0] != socksVersion5 || response[1] != authNone {
 		return ErrProxyAuthFailed
 	}
 
