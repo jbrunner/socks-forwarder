@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1769960826145,
+  "lastUpdate": 1769960842276,
   "repoUrl": "https://github.com/jbrunner/socks-forwarder",
   "entries": {
     "Benchmark": [
@@ -36810,6 +36810,390 @@ window.BENCHMARK_DATA = {
             "value": 0,
             "unit": "allocs/op",
             "extra": "5228918 times\n4 procs"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "joshua.brunner@bluewin.ch",
+            "name": "Joshua Brunner",
+            "username": "jbrunner"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "4e1446c8a0b44850ec7d40230932720842677621",
+          "message": "Merge pull request #70 from jbrunner/dependabot/github_actions/actions/cache-5\n\nci(deps): bump actions/cache from 4 to 5",
+          "timestamp": "2026-02-01T16:46:34+01:00",
+          "tree_id": "d42476819d4ecf1b43d827f6d1866b11809d078c",
+          "url": "https://github.com/jbrunner/socks-forwarder/commit/4e1446c8a0b44850ec7d40230932720842677621"
+        },
+        "date": 1769960841014,
+        "tool": "go",
+        "benches": [
+          {
+            "name": "BenchmarkMatchHostname/exact-match",
+            "value": 26.03,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "45101366 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMatchHostname/exact-match - ns/op",
+            "value": 26.03,
+            "unit": "ns/op",
+            "extra": "45101366 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMatchHostname/exact-match - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "45101366 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMatchHostname/exact-match - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "45101366 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMatchHostname/wildcard-prefix",
+            "value": 65.73,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "17517261 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMatchHostname/wildcard-prefix - ns/op",
+            "value": 65.73,
+            "unit": "ns/op",
+            "extra": "17517261 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMatchHostname/wildcard-prefix - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "17517261 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMatchHostname/wildcard-prefix - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "17517261 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMatchHostname/wildcard-suffix",
+            "value": 85.51,
+            "unit": "ns/op\t      32 B/op\t       1 allocs/op",
+            "extra": "13957216 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMatchHostname/wildcard-suffix - ns/op",
+            "value": 85.51,
+            "unit": "ns/op",
+            "extra": "13957216 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMatchHostname/wildcard-suffix - B/op",
+            "value": 32,
+            "unit": "B/op",
+            "extra": "13957216 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMatchHostname/wildcard-suffix - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "13957216 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMatchHostname/wildcard-middle",
+            "value": 106.5,
+            "unit": "ns/op\t      48 B/op\t       1 allocs/op",
+            "extra": "11609812 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMatchHostname/wildcard-middle - ns/op",
+            "value": 106.5,
+            "unit": "ns/op",
+            "extra": "11609812 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMatchHostname/wildcard-middle - B/op",
+            "value": 48,
+            "unit": "B/op",
+            "extra": "11609812 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMatchHostname/wildcard-middle - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "11609812 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMatchHostname/no-match",
+            "value": 28.36,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "42730360 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMatchHostname/no-match - ns/op",
+            "value": 28.36,
+            "unit": "ns/op",
+            "extra": "42730360 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMatchHostname/no-match - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "42730360 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkMatchHostname/no-match - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "42730360 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFindRule/api.internal.com",
+            "value": 96.96,
+            "unit": "ns/op\t      64 B/op\t       1 allocs/op",
+            "extra": "12171714 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFindRule/api.internal.com - ns/op",
+            "value": 96.96,
+            "unit": "ns/op",
+            "extra": "12171714 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFindRule/api.internal.com - B/op",
+            "value": 64,
+            "unit": "B/op",
+            "extra": "12171714 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFindRule/api.internal.com - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "12171714 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFindRule/api.example.com",
+            "value": 131.3,
+            "unit": "ns/op\t      64 B/op\t       1 allocs/op",
+            "extra": "9058897 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFindRule/api.example.com - ns/op",
+            "value": 131.3,
+            "unit": "ns/op",
+            "extra": "9058897 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFindRule/api.example.com - B/op",
+            "value": 64,
+            "unit": "B/op",
+            "extra": "9058897 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFindRule/api.example.com - allocs/op",
+            "value": 1,
+            "unit": "allocs/op",
+            "extra": "9058897 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFindRule/sub.test.com",
+            "value": 250,
+            "unit": "ns/op\t     112 B/op\t       2 allocs/op",
+            "extra": "4875836 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFindRule/sub.test.com - ns/op",
+            "value": 250,
+            "unit": "ns/op",
+            "extra": "4875836 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFindRule/sub.test.com - B/op",
+            "value": 112,
+            "unit": "B/op",
+            "extra": "4875836 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFindRule/sub.test.com - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "4875836 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFindRule/other.example.com",
+            "value": 406.5,
+            "unit": "ns/op\t     112 B/op\t       2 allocs/op",
+            "extra": "2858271 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFindRule/other.example.com - ns/op",
+            "value": 406.5,
+            "unit": "ns/op",
+            "extra": "2858271 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFindRule/other.example.com - B/op",
+            "value": 112,
+            "unit": "B/op",
+            "extra": "2858271 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFindRule/other.example.com - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "2858271 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFindRule/no-match.com",
+            "value": 378.7,
+            "unit": "ns/op\t     112 B/op\t       2 allocs/op",
+            "extra": "3216866 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFindRule/no-match.com - ns/op",
+            "value": 378.7,
+            "unit": "ns/op",
+            "extra": "3216866 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFindRule/no-match.com - B/op",
+            "value": 112,
+            "unit": "B/op",
+            "extra": "3216866 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkFindRule/no-match.com - allocs/op",
+            "value": 2,
+            "unit": "allocs/op",
+            "extra": "3216866 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShouldServeDirect/localhost",
+            "value": 23.16,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "52741850 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShouldServeDirect/localhost - ns/op",
+            "value": 23.16,
+            "unit": "ns/op",
+            "extra": "52741850 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShouldServeDirect/localhost - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "52741850 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShouldServeDirect/localhost - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "52741850 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShouldServeDirect/api.local",
+            "value": 123.2,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "9833911 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShouldServeDirect/api.local - ns/op",
+            "value": 123.2,
+            "unit": "ns/op",
+            "extra": "9833911 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShouldServeDirect/api.local - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "9833911 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShouldServeDirect/api.local - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "9833911 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShouldServeDirect/direct.example.com",
+            "value": 175.5,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "6974888 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShouldServeDirect/direct.example.com - ns/op",
+            "value": 175.5,
+            "unit": "ns/op",
+            "extra": "6974888 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShouldServeDirect/direct.example.com - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "6974888 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShouldServeDirect/direct.example.com - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "6974888 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShouldServeDirect/other.example.com",
+            "value": 252.5,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "4803949 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShouldServeDirect/other.example.com - ns/op",
+            "value": 252.5,
+            "unit": "ns/op",
+            "extra": "4803949 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShouldServeDirect/other.example.com - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "4803949 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShouldServeDirect/other.example.com - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "4803949 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShouldServeDirect/no-match.com",
+            "value": 222.4,
+            "unit": "ns/op\t       0 B/op\t       0 allocs/op",
+            "extra": "5367658 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShouldServeDirect/no-match.com - ns/op",
+            "value": 222.4,
+            "unit": "ns/op",
+            "extra": "5367658 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShouldServeDirect/no-match.com - B/op",
+            "value": 0,
+            "unit": "B/op",
+            "extra": "5367658 times\n4 procs"
+          },
+          {
+            "name": "BenchmarkShouldServeDirect/no-match.com - allocs/op",
+            "value": 0,
+            "unit": "allocs/op",
+            "extra": "5367658 times\n4 procs"
           }
         ]
       }
