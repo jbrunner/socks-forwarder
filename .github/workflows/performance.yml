@@ -37,6 +37,7 @@ jobs:
 
     - name: Run benchmarks
       run: |
+        set -o pipefail
         go test -bench=. -benchmem -run=^$ ./... | tee benchmark.txt
 
     - name: Upload benchmark results
