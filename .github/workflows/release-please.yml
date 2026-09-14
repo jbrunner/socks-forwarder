@@ -1,0 +1,228 @@
+name: Release Please
+
+# Maintains a release PR from Conventional Commits on main. Merging that PR
+# bumps .release-please-manifest.json, tags the release and creates the GitHub
+# Release; the same run then builds the release binaries, attaches them to the
+# release and pushes the container image to the GitHub Container Registry with
+# an attested SBOM. The builds live in this workflow rather than reacting to
+# the release or tag event: refs and releases created with the default
+# GITHUB_TOKEN do not trigger further workflow runs, so a separate
+# release-triggered workflow would never start (and working around that would
+# mean maintaining a PAT).
+#
+# No CHANGELOG.md is generated -- the release notes on the GitHub Release are
+# the only changelog (see "skip-changelog" in release-please-config.json).
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-please-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  GO_VERSION: '1.26'
+
+jobs:
+  release-please:
+    name: Release PR
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      pull-requests: write
+
+    outputs:
+      release-created: ${{ steps.release.outputs.release_created }}
+      tag-name: ${{ steps.release.outputs.tag_name }}
+      version: ${{ steps.release.outputs.version }}
+
+    steps:
+    - name: Run release-please
+      id: release
+      uses: googleapis/release-please-action@v5
+
+  build-binaries:
+    name: Build Release Binaries
+    runs-on: ubuntu-latest
+    needs: release-please
+    if: needs.release-please.outputs.release-created == 'true'
+
+    permissions:
+      contents: write
+
+    strategy:
+      matrix:
+        include:
+          - os: linux
+            arch: amd64
+          - os: linux
+            arch: arm64
+          - os: windows
+            arch: amd64
+          - os: darwin
+            arch: amd64
+          - os: darwin
+            arch: arm64
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v7
+      with:
+        ref: ${{ needs.release-please.outputs.tag-name }}
+
+    - name: Set up Go
+      uses: actions/setup-go@v7
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Cache Go modules
+      uses: actions/cache@v6
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    # main.version is a constant maintained by release-please in
+    # cmd/socks-forwarder/version.go, so only the volatile fields are injected.
+    - name: Build binary
+      env:
+        GOOS: ${{ matrix.os }}
+        GOARCH: ${{ matrix.arch }}
+        CGO_ENABLED: 0
+      run: |
+        BINARY_NAME=socks-forwarder-${{ matrix.os }}-${{ matrix.arch }}
+
+        if [ "${{ matrix.os }}" = "windows" ]; then
+          BINARY_NAME="${BINARY_NAME}.exe"
+        fi
+
+        go build \
+          -ldflags="-w -s -X main.buildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ) -X main.gitCommit=${GITHUB_SHA:0:7}" \
+          -o "${BINARY_NAME}" \
+          ./cmd/socks-forwarder
+
+    - name: Create archive
+      id: archive
+      env:
+        VERSION: ${{ needs.release-please.outputs.version }}
+      run: |
+        OS_ARCH=${{ matrix.os }}-${{ matrix.arch }}
+        DIR="socks-forwarder-${VERSION}-${OS_ARCH}"
+
+        mkdir -p "$DIR"
+
+        # Copy binary
+        if [ "${{ matrix.os }}" = "windows" ]; then
+          cp "socks-forwarder-${OS_ARCH}.exe" "$DIR/"
+        else
+          cp "socks-forwarder-${OS_ARCH}" "$DIR/"
+        fi
+
+        # Copy documentation and configs
+        cp README.md LICENSE config.yaml "$DIR/"
+
+        # Create archive
+        if [ "${{ matrix.os }}" = "windows" ]; then
+          zip -r "${DIR}.zip" "$DIR/"
+          echo "name=${DIR}.zip" >> "$GITHUB_OUTPUT"
+        else
+          tar -czf "${DIR}.tar.gz" "$DIR/"
+          echo "name=${DIR}.tar.gz" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Attach archive to the release
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        TAG: ${{ needs.release-please.outputs.tag-name }}
+        ARCHIVE: ${{ steps.archive.outputs.name }}
+      run: gh release upload "$TAG" "$ARCHIVE" --clobber
+
+  build-docker:
+    name: Build and Push Release Docker Images
+    runs-on: ubuntu-latest
+    needs: release-please
+    if: needs.release-please.outputs.release-created == 'true'
+
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v7
+      with:
+        ref: ${{ needs.release-please.outputs.tag-name }}
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v4
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v4
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v6
+      with:
+        images: ghcr.io/${{ github.repository }}
+        # The run is on a branch push, not a tag ref, so the version has to be
+        # fed in explicitly. latest=auto (the metadata-action default) adds
+        # :latest for non-prerelease versions.
+        tags: |
+          type=semver,pattern={{version}},value=${{ needs.release-please.outputs.tag-name }}
+          type=semver,pattern={{major}}.{{minor}},value=${{ needs.release-please.outputs.tag-name }}
+          type=semver,pattern={{major}},value=${{ needs.release-please.outputs.tag-name }}
+
+    - name: Build and push Docker image
+      id: build
+      uses: docker/build-push-action@v7
+      with:
+        context: .
+        file: ./Dockerfile
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        build-args: |
+          BUILD_DATE=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
+          GIT_COMMIT=${{ github.sha }}
+
+    - name: Generate the SBOM
+      uses: anchore/sbom-action@v0
+      with:
+        image: ghcr.io/${{ github.repository }}@${{ steps.build.outputs.digest }}
+        format: cyclonedx-json
+        output-file: sbom.cdx.json
+        upload-artifact: false
+        upload-release-assets: false
+
+    - name: Attest the SBOM to the image
+      uses: actions/attest@v4
+      with:
+        subject-name: ghcr.io/${{ github.repository }}
+        subject-digest: ${{ steps.build.outputs.digest }}
+        sbom-path: sbom.cdx.json
+        push-to-registry: true
+
+    - name: Update Docker Hub description
+      uses: peter-evans/dockerhub-description@v5
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+        repository: ${{ github.repository }}
+        readme-filepath: ./README.md
+      continue-on-error: true

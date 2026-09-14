@@ -15,7 +15,6 @@ import (
 
 //nolint:gochecknoglobals // Build-time variables set via ldflags during compilation
 var (
-	version   = "dev"
 	buildDate = "unknown"
 	gitCommit = "unknown"
 )
