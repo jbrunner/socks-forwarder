@@ -60,20 +60,40 @@ jobs:
         sarif_file: 'trivy-${{ matrix.dockerfile }}.sarif'
         category: 'trivy-${{ matrix.dockerfile }}'
 
+    # Grype downloads its own binary from the release CDN on every run, which
+    # intermittently answers 504. That is a tooling failure, not a finding, so
+    # retry once and never fail the job over it - Trivy stays the hard gate.
     - name: Run Grype vulnerability scanner
       uses: anchore/scan-action@v7
       id: grype-scan
+      continue-on-error: true
       with:
         image: 'test-image:latest'
         fail-build: false
         severity-cutoff: high
 
+    - name: Retry Grype vulnerability scanner
+      uses: anchore/scan-action@v7
+      id: grype-scan-retry
+      if: steps.grype-scan.outcome == 'failure'
+      continue-on-error: true
+      with:
+        image: 'test-image:latest'
+        fail-build: false
+        severity-cutoff: high
+
+    # Without the output guard this step aborts the job with "Input required
+    # and not supplied: sarif_file" whenever the scan above produced no file.
     - name: Upload Grype scan results
       uses: github/codeql-action/upload-sarif@v4
-      if: always()
+      if: always() && (steps.grype-scan.outputs.sarif || steps.grype-scan-retry.outputs.sarif)
       with:
-        sarif_file: ${{ steps.grype-scan.outputs.sarif }}
+        sarif_file: ${{ steps.grype-scan.outputs.sarif || steps.grype-scan-retry.outputs.sarif }}
         category: 'grype-${{ matrix.dockerfile }}'
+
+    - name: Report unavailable Grype scan
+      if: steps.grype-scan.outcome == 'failure' && steps.grype-scan-retry.outcome != 'success'
+      run: echo "::warning title=Grype scan skipped::Grype could not be installed or run twice in a row. The grype-${{ matrix.dockerfile }} category keeps its previous results; Trivy results are unaffected."
 
     - name: Generate security report
       run: |
