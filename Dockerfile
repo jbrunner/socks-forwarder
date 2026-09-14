@@ -6,19 +6,19 @@ FROM golang:1.27-alpine AS builder
 RUN apk add --no-cache git ca-certificates tzdata && \
     adduser -D -s /bin/sh -u 1001 builder
 
-USER builder
+USER 1001
 
 # Set working directory
 WORKDIR /app
 
 # Copy go mod files first for better caching
-COPY --chown=builder:builder go.mod go.sum ./
+COPY --chown=1001:1001 go.mod go.sum ./
 
 # Download dependencies
 RUN go mod download
 
 # Copy source code
-COPY --chown=builder:builder . .
+COPY --chown=1001:1001 . .
 
 # Use Docker's automatic platform detection
 ARG TARGETPLATFORM
