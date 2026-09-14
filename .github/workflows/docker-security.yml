@@ -1,17 +1,14 @@
 name: Docker Security Scan
 
+# No `paths` filter: the scanned image also depends on the Go sources and
+# go.mod/go.sum, and code scanning needs every pull request to upload the same
+# SARIF categories as `main`. A filtered run leaves the categories missing and
+# GitHub reports "configuration not found" instead of the alert diff.
 on:
   push:
     branches: [ main ]
-    paths:
-      - 'Dockerfile'
-      - 'docker-compose.yml'
-      - '.github/workflows/docker-security.yml'
   pull_request:
     branches: [ main ]
-    paths:
-      - 'Dockerfile'
-      - 'docker-compose.yml'
   schedule:
     - cron: '0 4 * * 1'  # Weekly on Monday at 4 AM
 
