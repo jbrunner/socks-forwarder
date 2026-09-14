@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -59,7 +60,8 @@ func (h *HTTPProxyServer) ListenAndServe(ctx context.Context, addr string) error
 // ServeHTTP implements the http.Handler interface for HTTP proxying.
 func (h *HTTPProxyServer) ServeHTTP(responseWriter http.ResponseWriter, request *http.Request) {
 	if h.Debug {
-		log.Printf("[HTTP PROXY] %s %s Host=%s", request.Method, request.URL.String(), request.Host)
+		log.Printf("[HTTP PROXY] %s %s Host=%s",
+			strconv.Quote(request.Method), strconv.Quote(request.URL.String()), strconv.Quote(request.Host))
 	}
 
 	// Handle HTTPS CONNECT method (tunneling)
@@ -117,7 +119,7 @@ func (h *HTTPProxyServer) handleConnect(responseWriter http.ResponseWriter, requ
 		return
 	}
 	defer func() {
-		log.Printf("Closing connection from %s", clientAddr)
+		log.Printf("Closing connection from %s", strconv.Quote(clientAddr))
 		if err := destConn.Close(); err != nil {
 			log.Printf("[HTTP PROXY] error closing destConn: %v", err)
 		}
@@ -133,7 +135,8 @@ func (h *HTTPProxyServer) handleConnect(responseWriter http.ResponseWriter, requ
 	// Write 200 OK to client to signal tunnel is established
 	_, err = clientConn.Write([]byte("HTTP/1.1 200 Connection Established\r\n\r\n"))
 	if err != nil {
-		log.Printf("[HTTP PROXY] [connect] failed to write 200 OK to client for %s: %v", request.Host, err)
+		log.Printf("[HTTP PROXY] [connect] failed to write 200 OK to client for %s: %s",
+			strconv.Quote(request.Host), strconv.Quote(err.Error()))
 		metrics.RecordProxyError("connect", "")
 
 		return
@@ -174,10 +177,12 @@ func (h *HTTPProxyServer) dialConnectTarget(
 ) (net.Conn, error) {
 	if rule != nil {
 		socks5Addr := rule.Target
-		log.Printf("Forwarding %s through %s (rule: %s)", request.Host, socks5Addr, rule.Name)
+		log.Printf("Forwarding %s through %s (rule: %s)",
+			strconv.Quote(request.Host), strconv.Quote(socks5Addr), strconv.Quote(rule.Name))
 		socksDialer, dialerErr := proxy.SOCKS5("tcp", socks5Addr, nil, proxy.Direct)
 		if dialerErr != nil {
-			log.Printf("[HTTP PROXY] [connect] failed to create SOCKS5 dialer for %s: %v", socks5Addr, dialerErr)
+			log.Printf("[HTTP PROXY] [connect] failed to create SOCKS5 dialer for %s: %s",
+				strconv.Quote(socks5Addr), strconv.Quote(dialerErr.Error()))
 			metrics.RecordProxyError("connect", "")
 			http.Error(responseWriter, "Failed to create SOCKS5 dialer", http.StatusBadGateway)
 
@@ -186,7 +191,8 @@ func (h *HTTPProxyServer) dialConnectTarget(
 
 		destConn, err := socksDialer.Dial("tcp", request.Host)
 		if err != nil {
-			log.Printf("[HTTP PROXY] [connect] failed to dial %s via SOCKS5 %s: %v", request.Host, socks5Addr, err)
+			log.Printf("[HTTP PROXY] [connect] failed to dial %s via SOCKS5 %s: %s",
+				strconv.Quote(request.Host), strconv.Quote(socks5Addr), strconv.Quote(err.Error()))
 			metrics.RecordProxyError("connect", "")
 			http.Error(responseWriter, "Failed to connect to target host via SOCKS5", http.StatusBadGateway)
 
@@ -196,11 +202,12 @@ func (h *HTTPProxyServer) dialConnectTarget(
 		return destConn, nil
 	}
 	// fallback to direct dialer
-	log.Printf("Forwarding %s directly (no rule matched)", request.Host)
+	log.Printf("Forwarding %s directly (no rule matched)", strconv.Quote(request.Host))
 	dialer := &net.Dialer{Timeout: tunnelTimeout}
 	destConn, err := dialer.DialContext(request.Context(), "tcp", request.Host)
 	if err != nil {
-		log.Printf("[HTTP PROXY] [connect] failed to dial %s directly: %v", request.Host, err)
+		log.Printf("[HTTP PROXY] [connect] failed to dial %s directly: %s",
+			strconv.Quote(request.Host), strconv.Quote(err.Error()))
 		metrics.RecordProxyError("connect", "")
 		http.Error(responseWriter, "Failed to connect to target host", http.StatusBadGateway)
 
@@ -216,7 +223,7 @@ var errHijackingNotSupported = fmt.Errorf("hijacking not supported")
 func hijackConnection(responseWriter http.ResponseWriter, host string) (net.Conn, error) {
 	hijacker, ok := responseWriter.(http.Hijacker)
 	if !ok {
-		log.Printf("[HTTP PROXY] [connect] hijacking not supported for %s", host)
+		log.Printf("[HTTP PROXY] [connect] hijacking not supported for %s", strconv.Quote(host))
 		metrics.RecordProxyError("connect", "")
 		http.Error(responseWriter, "Hijacking not supported", http.StatusInternalServerError)
 
@@ -225,7 +232,7 @@ func hijackConnection(responseWriter http.ResponseWriter, host string) (net.Conn
 
 	clientConn, _, err := hijacker.Hijack()
 	if err != nil {
-		log.Printf("[HTTP PROXY] [connect] hijack failed for %s: %v", host, err)
+		log.Printf("[HTTP PROXY] [connect] hijack failed for %s: %s", strconv.Quote(host), strconv.Quote(err.Error()))
 		metrics.RecordProxyError("connect", "")
 		http.Error(responseWriter, "Hijack failed", http.StatusInternalServerError)
 
@@ -240,7 +247,7 @@ func (h *HTTPProxyServer) handleDirect(responseWriter http.ResponseWriter, reque
 	transport := http.DefaultTransport
 	resp, err := transport.RoundTrip(request)
 	if err != nil {
-		log.Printf("[HTTP PROXY] [direct] error: %v", err)
+		log.Printf("[HTTP PROXY] [direct] error: %s", strconv.Quote(err.Error()))
 		metrics.RecordProxyError("direct", "")
 		responseWriter.WriteHeader(http.StatusBadGateway)
 		fmt.Fprintf(responseWriter, "Proxy error: %v", err)
@@ -250,6 +257,7 @@ func (h *HTTPProxyServer) handleDirect(responseWriter http.ResponseWriter, reque
 	defer resp.Body.Close()
 	copyHeader(responseWriter.Header(), resp.Header)
 	responseWriter.WriteHeader(resp.StatusCode)
+	// #nosec G706 -- an int status code cannot carry a newline into the log
 	log.Printf("[HTTP PROXY] [direct] status: %d", resp.StatusCode)
 	_, _ = io.Copy(responseWriter, resp.Body)
 	metrics.RecordProxyDecision("")
@@ -266,9 +274,11 @@ func (h *HTTPProxyServer) handleProxy(responseWriter http.ResponseWriter, reques
 	}
 	rule := h.Config.FindRule(request.Host)
 	if rule != nil {
-		log.Printf("Forwarding %s through %s (rule: %s)", request.Host, socks5Addr, rule.Name)
+		log.Printf("Forwarding %s through %s (rule: %s)",
+			strconv.Quote(request.Host), strconv.Quote(socks5Addr), strconv.Quote(rule.Name))
 	} else {
-		log.Printf("Forwarding %s through %s (no rule matched)", request.Host, socks5Addr)
+		log.Printf("Forwarding %s through %s (no rule matched)",
+			strconv.Quote(request.Host), strconv.Quote(socks5Addr))
 	}
 	dialer, err := proxy.SOCKS5("tcp", socks5Addr, nil, proxy.Direct)
 	if err == nil {
@@ -289,7 +299,8 @@ func (h *HTTPProxyServer) handleProxy(responseWriter http.ResponseWriter, reques
 
 	resp, err := transport.RoundTrip(request)
 	if err != nil {
-		log.Printf("[HTTP PROXY] [proxy] error: %v (upstream: %s)", err, upstream)
+		log.Printf("[HTTP PROXY] [proxy] error: %s (upstream: %s)",
+			strconv.Quote(err.Error()), strconv.Quote(upstream))
 		metrics.RecordProxyError("proxy", "")
 		responseWriter.WriteHeader(http.StatusBadGateway)
 		fmt.Fprintf(responseWriter, "Proxy error: %v", err)
@@ -297,7 +308,7 @@ func (h *HTTPProxyServer) handleProxy(responseWriter http.ResponseWriter, reques
 		return
 	}
 	defer func() {
-		log.Printf("Closing connection from %s", clientAddr)
+		log.Printf("Closing connection from %s", strconv.Quote(clientAddr))
 		if err := resp.Body.Close(); err != nil {
 			log.Printf("[HTTP PROXY] error closing resp.Body: %v", err)
 		}

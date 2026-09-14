@@ -1,6 +1,7 @@
 package socks5
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -22,12 +23,14 @@ const (
 
 // SOCKS5 protocol packet size constants.
 const (
-	SOCKS5IPv4PacketMinSize    = 10 // Minimum size for IPv4 address packet
-	SOCKS5DomainPacketMinSize  = 5  // Minimum size for domain name packet
-	SOCKS5IPv6PacketMinSize    = 22 // Minimum size for IPv6 address packet
-	SOCKS5ResponseSize         = 2  // Size of SOCKS5 response buffer
-	SOCKS5PortSize             = 2  // Size of port in bytes
-	GoroutineChannelBufferSize = 2  // Buffer size for bidirectional forwarding channel
+	SOCKS5IPv4PacketMinSize    = 10  // Minimum size for IPv4 address packet
+	SOCKS5DomainPacketMinSize  = 5   // Minimum size for domain name packet
+	SOCKS5IPv6PacketMinSize    = 22  // Minimum size for IPv6 address packet
+	SOCKS5ResponseSize         = 2   // Size of SOCKS5 response buffer
+	SOCKS5PortSize             = 2   // Size of port in bytes
+	SOCKS5MaxDomainNameLength  = 255 // Largest domain name a single length byte can encode
+	socksGreetingHeaderSize    = 2   // Version byte plus method-count byte
+	GoroutineChannelBufferSize = 2   // Buffer size for bidirectional forwarding channel
 )
 
 // Static error definitions.
@@ -126,6 +129,21 @@ func (h *Handler) Handle(clientConn net.Conn) error {
 	return nil
 }
 
+// greetingMethods validates a client greeting of n bytes read into buf and
+// returns the authentication methods the client advertised.
+func greetingMethods(buf []byte, n int) ([]byte, error) {
+	if n < socksGreetingHeaderSize+1 || buf[0] != socksVersion5 {
+		return nil, ErrInvalidSOCKSVersion
+	}
+
+	end := socksGreetingHeaderSize + int(buf[1])
+	if n < end || end > len(buf) {
+		return nil, ErrInvalidGreetingLength
+	}
+
+	return buf[socksGreetingHeaderSize:end], nil
+}
+
 // handleAuthentication handles the SOCKS5 authentication phase.
 func (h *Handler) handleAuthentication(conn net.Conn) error {
 	// Read client greeting
@@ -135,24 +153,13 @@ func (h *Handler) handleAuthentication(conn net.Conn) error {
 		return fmt.Errorf("failed to read client greeting: %w", err)
 	}
 
-	if n < 3 || buf[0] != socksVersion5 {
-		return ErrInvalidSOCKSVersion
-	}
-
-	methodCount := int(buf[1])
-	if n < 2+methodCount {
-		return ErrInvalidGreetingLength
+	methods, err := greetingMethods(buf, n)
+	if err != nil {
+		return err
 	}
 
 	// Check supported methods (we only support no authentication)
-	methodSupported := false
-	for i := 0; i < methodCount; i++ {
-		if buf[2+i] == authNone {
-			methodSupported = true
-
-			break
-		}
-	}
+	methodSupported := bytes.IndexByte(methods, authNone) >= 0
 
 	// Send method selection response
 	response := []byte{socksVersion5, authNone}
@@ -450,7 +457,10 @@ func (h *Handler) performSocks5Auth(conn net.Conn) error {
 // performSocks5Connect sends connect request and validates response.
 func (h *Handler) performSocks5Connect(conn net.Conn, targetHost string, targetPort int) error {
 	// Build and send connection request
-	request := h.buildConnectRequest(targetHost, targetPort)
+	request, err := h.buildConnectRequest(targetHost, targetPort)
+	if err != nil {
+		return err
+	}
 
 	if _, err := conn.Write(request); err != nil {
 		return fmt.Errorf("failed to write SOCKS5 connection request: %w", err)
@@ -461,18 +471,21 @@ func (h *Handler) performSocks5Connect(conn net.Conn, targetHost string, targetP
 }
 
 // buildConnectRequest builds SOCKS5 connect request.
-func (h *Handler) buildConnectRequest(targetHost string, targetPort int) []byte {
+func (h *Handler) buildConnectRequest(targetHost string, targetPort int) ([]byte, error) {
 	request := []byte{socksVersion5, cmdConnect, 0x00}
 
 	// Add target address
 	if net.ParseIP(targetHost) != nil {
 		request = h.addIPAddress(request, targetHost)
 	} else {
-		request = h.addDomainName(request, targetHost)
+		var err error
+		if request, err = h.addDomainName(request, targetHost); err != nil {
+			return nil, err
+		}
 	}
 
 	// Add port
-	return h.addPort(request, targetPort)
+	return h.addPort(request, targetPort), nil
 }
 
 // addIPAddress adds IP address to SOCKS5 request.
@@ -491,12 +504,19 @@ func (h *Handler) addIPAddress(request []byte, targetHost string) []byte {
 	return request
 }
 
-// addDomainName adds domain name to SOCKS5 request.
-func (h *Handler) addDomainName(request []byte, targetHost string) []byte {
-	request = append(request, addrDomain, byte(len(targetHost)))
+// addDomainName adds domain name to SOCKS5 request. The SOCKS5 address field
+// prefixes the name with a single length byte, so anything longer than
+// SOCKS5MaxDomainNameLength cannot be encoded.
+func (h *Handler) addDomainName(request []byte, targetHost string) ([]byte, error) {
+	if len(targetHost) > SOCKS5MaxDomainNameLength {
+		return nil, fmt.Errorf("%w: %d bytes", ErrInvalidDomainLength, len(targetHost))
+	}
+
+	// Safe conversion: length is guaranteed to be in range [0, 255]
+	request = append(request, addrDomain, byte(len(targetHost))) // #nosec G115 -- length validated above
 	request = append(request, []byte(targetHost)...)
 
-	return request
+	return request, nil
 }
 
 // addPort adds port to SOCKS5 request.

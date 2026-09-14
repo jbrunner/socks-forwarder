@@ -39,6 +39,12 @@ const (
 	bytesToMB           = 1024 * 1024
 )
 
+// Readiness values reported by the health and readiness endpoints.
+const (
+	statusReady    = "ready"
+	statusNotReady = "not ready"
+)
+
 // NewServer creates a new SOCKS5 forwarder server.
 func NewServer(cfg *config.Config) *Server {
 	// Initialize metrics with current config
@@ -205,14 +211,14 @@ func (s *Server) handleHealth(writer http.ResponseWriter, _ *http.Request) {
 
 	if ready && alive {
 		status.Status = "healthy"
-		status.Details["socks_listener"] = "ready"
+		status.Details["socks_listener"] = statusReady
 		status.Details["liveness"] = "ok"
 		writer.Header().Set("Content-Type", "application/json")
 		writer.WriteHeader(http.StatusOK)
 	} else {
 		status.Status = "unhealthy"
 		if !ready {
-			status.Details["socks_listener"] = "not ready"
+			status.Details["socks_listener"] = statusNotReady
 		}
 		if !alive {
 			status.Details["liveness"] = "failed"
@@ -230,10 +236,10 @@ func (s *Server) handleHealth(writer http.ResponseWriter, _ *http.Request) {
 func (s *Server) handleReadiness(writer http.ResponseWriter, _ *http.Request) {
 	if atomic.LoadInt32(&s.ready) == 1 {
 		status := HealthStatus{
-			Status:    "ready",
+			Status:    statusReady,
 			Timestamp: time.Now(),
 			Uptime:    time.Since(s.startTime).String(),
-			Details:   map[string]string{"socks_listener": "ready"},
+			Details:   map[string]string{"socks_listener": statusReady},
 		}
 		writer.Header().Set("Content-Type", "application/json")
 		writer.WriteHeader(http.StatusOK)
@@ -242,10 +248,10 @@ func (s *Server) handleReadiness(writer http.ResponseWriter, _ *http.Request) {
 		}
 	} else {
 		status := HealthStatus{
-			Status:    "not ready",
+			Status:    statusNotReady,
 			Timestamp: time.Now(),
 			Uptime:    time.Since(s.startTime).String(),
-			Details:   map[string]string{"socks_listener": "not ready"},
+			Details:   map[string]string{"socks_listener": statusNotReady},
 		}
 		writer.Header().Set("Content-Type", "application/json")
 		writer.WriteHeader(http.StatusServiceUnavailable)

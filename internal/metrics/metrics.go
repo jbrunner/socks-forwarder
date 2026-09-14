@@ -5,6 +5,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
+// labelRuleName is the Prometheus label carrying the name of the matched
+// forwarding rule. Every rule-aware metric below is partitioned by it.
+const labelRuleName = "rule_name"
+
 var (
 	// Connection metrics.
 	//nolint:gochecknoglobals // gochecknoglobals:global-variable - Prometheus metrics must be global
@@ -17,7 +21,7 @@ var (
 	ActiveConnectionsByRule = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "socks5_active_connections_by_rule",
 		Help: "Number of currently active SOCKS5 connections by rule",
-	}, []string{"rule_name"})
+	}, []string{labelRuleName})
 
 	//nolint:gochecknoglobals // gochecknoglobals:global-variable - Prometheus metrics must be global
 	TotalConnections = promauto.NewCounterVec(prometheus.CounterOpts{
@@ -30,27 +34,27 @@ var (
 		Name:    "socks5_connection_duration_seconds",
 		Help:    "Duration of SOCKS5 connections in seconds",
 		Buckets: []float64{0.1, 0.5, 1.0, 5.0, 10.0, 30.0, 60.0, 300.0, 600.0},
-	}, []string{"routing_type", "rule_name"}) // routing_type: direct, proxy, default
+	}, []string{"routing_type", labelRuleName}) // routing_type: direct, proxy, default
 
 	// Traffic metrics.
 	//nolint:gochecknoglobals // gochecknoglobals:global-variable - Prometheus metrics must be global
 	BytesTransferred = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "socks5_bytes_transferred_total",
 		Help: "Total bytes transferred through SOCKS5 proxy",
-	}, []string{"direction", "routing_type", "rule_name"}) // direction: in, out
+	}, []string{"direction", "routing_type", labelRuleName}) // direction: in, out
 
 	// Routing metrics.
 	//nolint:gochecknoglobals // gochecknoglobals:global-variable - Prometheus metrics must be global
 	RoutingDecisions = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "socks5_routing_decisions_total",
 		Help: "Total routing decisions made",
-	}, []string{"decision", "rule_name"}) // decision: direct, proxy, default
+	}, []string{"decision", labelRuleName}) // decision: direct, proxy, default
 
 	//nolint:gochecknoglobals // gochecknoglobals:global-variable - Prometheus metrics must be global
 	RuleMatches = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "socks5_rule_matches_total",
 		Help: "Total number of rule matches",
-	}, []string{"rule_target", "rule_name"})
+	}, []string{"rule_target", labelRuleName})
 
 	//nolint:gochecknoglobals // gochecknoglobals:global-variable - Prometheus metrics must be global
 	DirectHostMatches = promauto.NewCounter(prometheus.CounterOpts{
@@ -63,13 +67,13 @@ var (
 	ConnectionErrors = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "socks5_connection_errors_total",
 		Help: "Total connection errors",
-	}, []string{"error_type", "rule_name"}) // error_type: dial_failed, proxy_failed, auth_failed, etc.
+	}, []string{"error_type", labelRuleName}) // error_type: dial_failed, proxy_failed, auth_failed, etc.
 
 	//nolint:gochecknoglobals // gochecknoglobals:global-variable - Prometheus metrics must be global
 	ProxyErrors = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "socks5_proxy_errors_total",
 		Help: "Total proxy-related errors",
-	}, []string{"error_type", "rule_name"})
+	}, []string{"error_type", labelRuleName})
 
 	// Performance metrics.
 	//nolint:gochecknoglobals // gochecknoglobals:global-variable - Prometheus metrics must be global
@@ -77,14 +81,14 @@ var (
 		Name:    "socks5_connection_establishment_seconds",
 		Help:    "Time taken to establish connections",
 		Buckets: []float64{0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0},
-	}, []string{"connection_type", "rule_name"}) // connection_type: direct, proxy
+	}, []string{"connection_type", labelRuleName}) // connection_type: direct, proxy
 
 	//nolint:gochecknoglobals // gochecknoglobals:global-variable - Prometheus metrics must be global
 	DataTransferRate = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Name:    "socks5_data_transfer_rate_bytes_per_second",
 		Help:    "Data transfer rate in bytes per second",
 		Buckets: []float64{1024, 10240, 102400, 1048576, 10485760, 104857600}, // 1KB to 100MB/s
-	}, []string{"direction", "rule_name"}) // direction: upload, download
+	}, []string{"direction", labelRuleName}) // direction: upload, download
 
 	//nolint:gochecknoglobals // gochecknoglobals:global-variable - Prometheus metrics must be global
 	ActiveRules = promauto.NewGauge(prometheus.GaugeOpts{
