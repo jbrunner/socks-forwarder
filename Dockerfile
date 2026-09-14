@@ -26,9 +26,14 @@ ARG BUILDPLATFORM
 ARG TARGETOS
 ARG TARGETARCH
 
+# Build metadata. The version itself lives in cmd/socks-forwarder/version.go and
+# is maintained by release-please, so only the volatile fields are injected here.
+ARG BUILD_DATE=unknown
+ARG GIT_COMMIT=unknown
+
 # Build the application with static linking and verify it works
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build \
-    -ldflags='-w -s -extldflags "-static"' \
+    -ldflags="-w -s -extldflags '-static' -X main.buildDate=${BUILD_DATE} -X main.gitCommit=${GIT_COMMIT}" \
     -a -installsuffix cgo \
     -o socks-forwarder \
     ./cmd/socks-forwarder && \
