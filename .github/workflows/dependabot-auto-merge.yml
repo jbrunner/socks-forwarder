@@ -1,0 +1,38 @@
+name: Dependabot auto-merge
+
+# Arms auto-merge on Dependabot's semver-minor and semver-patch pull requests.
+# GitHub then merges each one as soon as the required status checks on main
+# pass, which keeps dependency updates from piling up and conflicting with one
+# another in go.mod and go.sum. Major bumps are left for manual review.
+#
+# Squash-merging keeps the Dependabot pull request title as the single commit
+# on main, matching the history the repository already has.
+#
+# pull_request_target is required: a workflow triggered by `pull_request` from
+# Dependabot gets a read-only token and no access to secrets. Nothing from the
+# pull request is checked out or executed here, only its metadata is read.
+on: pull_request_target
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    name: Enable auto-merge
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
+
+    steps:
+    - name: Fetch Dependabot metadata
+      id: meta
+      uses: dependabot/fetch-metadata@v3
+
+    # For a grouped pull request update-type is the highest bump in the group,
+    # so a group containing a major bump is correctly left alone.
+    - name: Enable auto-merge for minor and patch updates
+      if: contains(fromJSON('["version-update:semver-minor", "version-update:semver-patch"]'), steps.meta.outputs.update-type)
+      run: gh pr merge --auto --squash "$PR_URL"
+      env:
+        PR_URL: ${{ github.event.pull_request.html_url }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,4 +1,28 @@
 version: 2
+
+# Commit-message prefixes feed release-please: dependency updates use "fix"
+# (-> patch release, listed in the GitHub release notes), because they change
+# the shipped binary and the published image. Workflow updates use "chore",
+# which produces no release.
+#
+# Two settings keep Dependabot pull requests from conflicting with each other.
+#
+# First, no `allow` block: gomod version updates then cover direct dependencies
+# only. Indirect modules move on their own through minimal version selection
+# whenever a direct dependency that needs them is bumped, so updating them
+# separately only produces combinations upstream never tested -- and it is what
+# used to put eight of this module's eleven requirements into pull requests of
+# their own. Security updates are unaffected: without an `allow` block they
+# cover every vulnerable module in the lock file, indirect ones included.
+#
+# Second, grouping: each ecosystem collects its semver-minor and semver-patch
+# bumps into a single weekly pull request, so a week's updates are one go.mod
+# and go.sum diff instead of several that rewrite the same hunks. Major bumps
+# stay in their own pull request -- they need to be read.
+#
+# The auto-merge workflow (dependabot-auto-merge.yml) merges the minor/patch
+# groups once the required checks pass, so they do not sit around long enough
+# to collide with the next run either.
 updates:
   # Go modules
   - package-ecosystem: gomod
@@ -8,18 +32,21 @@ updates:
       day: monday
       time: "06:00"
     open-pull-requests-limit: 5
-    reviewers:
-      - jbrunner
     assignees:
       - jbrunner
     commit-message:
-      prefix: deps
+      prefix: fix
       include: scope
     labels:
       - dependencies
-    allow:
-      - dependency-type: direct
-      - dependency-type: indirect
+    groups:
+      go-dependencies:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
 
   # Docker dependencies
   - package-ecosystem: docker
@@ -29,15 +56,21 @@ updates:
       day: monday
       time: "06:00"
     open-pull-requests-limit: 3
-    reviewers:
-      - jbrunner
     assignees:
       - jbrunner
     commit-message:
-      prefix: docker
+      prefix: fix
       include: scope
     labels:
       - dependencies
+    groups:
+      docker-images:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
 
   # GitHub Actions
   - package-ecosystem: github-actions
@@ -47,13 +80,18 @@ updates:
       day: monday
       time: "06:00"
     open-pull-requests-limit: 3
-    reviewers:
-      - jbrunner
     assignees:
       - jbrunner
     commit-message:
-      prefix: ci
+      prefix: chore
       include: scope
     labels:
       - dependencies
-
+    groups:
+      github-actions:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch

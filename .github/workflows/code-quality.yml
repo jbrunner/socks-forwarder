@@ -6,6 +6,15 @@ on:
   pull_request:
     branches: [ main ]
 
+# Supersede a still-running check when a branch is pushed again. Dependabot
+# rebases its pull requests whenever main moves, and without this every rebase
+# leaves the previous run burning minutes and reporting a stale result against
+# the branch. Runs on main are never cancelled: they publish images and feed
+# the code scanning baseline, so they have to finish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 env:
   GO_VERSION: '1.26'
 
