@@ -78,6 +78,11 @@ jobs:
       uses: actions/setup-go@v7
       with:
         go-version: ${{ env.GO_VERSION }}
+        # Resolve GO_VERSION to the newest matching patch release instead of
+        # whatever the runner image happens to have cached. Without this the
+        # job builds against a stale toolchain and govulncheck reports standard
+        # library advisories that are already fixed upstream.
+        check-latest: true
 
     - name: Cache Go modules
       uses: actions/cache@v6
