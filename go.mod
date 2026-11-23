@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/prometheus/client_golang v1.25.0
-	golang.org/x/net v0.62.0
+	golang.org/x/net v0.63.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -15,6 +15,6 @@ require (
 	github.com/prometheus/client_model v0.6.3 // indirect
 	github.com/prometheus/common v0.72.0 // indirect
 	github.com/prometheus/procfs v0.22.0 // indirect
-	golang.org/x/sys v0.49.0 // indirect
+	golang.org/x/sys v0.50.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
 )
